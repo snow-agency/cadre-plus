@@ -99,3 +99,34 @@ def test_avis_ia_payload_trop_gros_et_fournisseur_en_panne(monkeypatch):
 
     monkeypatch.setattr(ai_client, "complete", en_panne)
     assert client.post("/api/assistant", json={"question": "test"}).status_code == 502
+
+
+def test_limitation_de_debit_ia_par_adresse(monkeypatch):
+    from app import ratelimit
+    monkeypatch.setattr(ai_client, "complete", lambda *a: "ok")
+    monkeypatch.setattr(ratelimit, "LIMITE_PAR_IP", 2)
+    entetes = {"x-forwarded-for": "203.0.113.7"}
+    for _ in range(2):
+        assert client.post("/api/assistant", json={"question": "q"}, headers=entetes).status_code == 200
+    r = client.post("/api/assistant", json={"question": "q"}, headers=entetes)
+    assert r.status_code == 429 and "Retry-After" in r.headers
+    autre = {"x-forwarded-for": "198.51.100.9"}
+    assert client.post("/api/assistant", json={"question": "q"}, headers=autre).status_code == 200
+
+
+def test_limitation_de_debit_ia_globale_et_endpoints_non_concernes(monkeypatch):
+    from app import ratelimit
+    monkeypatch.setattr(ai_client, "complete", lambda *a: "ok")
+    monkeypatch.setattr(ratelimit, "LIMITE_GLOBALE", 1)
+    assert client.post("/api/assistant", json={"question": "q"}, headers={"x-forwarded-for": "1.1.1.1"}).status_code == 200
+    assert client.post("/api/assistant/avis", json={"type": "amenagement", "payload": {}},
+                       headers={"x-forwarded-for": "2.2.2.2"}).status_code == 429
+    for _ in range(5):
+        assert client.get("/api/icv").status_code == 200
+
+
+def test_origines_cors_configurables(monkeypatch):
+    monkeypatch.setenv("CORS_ORIGINS", "https://cadre-plus.vercel.app/, https://autre.example")
+    assert main.origines_autorisees() == ["https://cadre-plus.vercel.app", "https://autre.example"]
+    monkeypatch.delenv("CORS_ORIGINS")
+    assert main.origines_autorisees() == ["http://localhost:3000"]

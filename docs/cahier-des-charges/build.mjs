@@ -117,10 +117,15 @@ const note = ({ text, tone }) => new Paragraph({
 // listes numérotées : une référence par liste pour que la numérotation redémarre
 const listesOrdonnees = blocs.filter((b) => b.t === "ol").map((_, i) => `ol-${i}`);
 let compteurOl = 0;
+let h1Vu = false;
 
 function rendre(b) {
   switch (b.t) {
-    case "h1": return [titre("Heading1", b.text)];
+    case "h1": {
+      const premier = !h1Vu;
+      h1Vu = true;
+      return [new Paragraph({ heading: "Heading1", pageBreakBefore: premier, children: [new TextRun({ text: b.text })] })];
+    }
     case "h2": return [titre("Heading2", b.text)];
     case "h3": return [titre("Heading3", b.text)];
     case "p": return [para(b.text)];
@@ -155,7 +160,11 @@ const couverture = [
 ];
 
 const sommaire = [
-  new Paragraph({ heading: "Heading1", pageBreakBefore: true, children: [new TextRun({ text: "Sommaire" })] }),
+  new Paragraph({
+    pageBreakBefore: true, spacing: { before: 420, after: 160 },
+    border: { bottom: { style: BorderStyle.SINGLE, size: 8, color: COLOR.titre, space: 4 } },
+    children: [new TextRun({ text: "Sommaire", size: 34, bold: true, color: COLOR.titre })],
+  }),
   new TableOfContents("Sommaire", { hyperlink: true, headingStyleRange: "1-2" }),
 ];
 

@@ -1,0 +1,27 @@
+# Déploiement du backend (FastAPI) sur Render. Le front est déployé séparément sur Vercel.
+# Le dépôt entier est récupéré : l'API lit les données dans data/output/ à la racine du dépôt.
+services:
+  - type: web
+    name: cadre-plus-api
+    runtime: python
+    plan: free
+    region: frankfurt
+    buildCommand: pip install -r services/api/requirements.txt
+    startCommand: cd services/api && uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.13.5
+      - key: RODIUM_API_KEY
+        sync: false # à saisir dans le tableau de bord Render, jamais dans le dépôt
+      - key: RODIUM_API_URL
+        value: https://api.rodiumai.io/v1
+      - key: RODIUM_MODEL
+        value: anthropic/claude-sonnet-5
+      - key: CORS_ORIGINS
+        sync: false # URL du site Vercel, ex. https://cadre-plus.vercel.app
+      - key: AI_RATE_LIMIT_PER_HOUR
+        value: "30"
+      - key: AI_GLOBAL_LIMIT_PER_HOUR
+        value: "300"

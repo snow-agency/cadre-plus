@@ -143,10 +143,11 @@ export default function CadreMap() {
       fitBoundsOptions: { padding: { top: 60, bottom: 60, left: 320, right: 440 } },
     });
     instance.addControl(new maplibregl.NavigationControl(), "top-right");
-    instance.on("load", () => {
+    // « style.load » plutôt que « load » : les données s'affichent sans attendre les tuiles du fond de carte (connexion lente)
+    instance.once("style.load", () => {
       addLayers(instance);
       addInteractions(instance);
-      if (process.env.NODE_ENV !== "production") {
+      if (process.env.NODE_ENV !== "production" || process.env.NEXT_PUBLIC_E2E === "1") {
         (window as unknown as { __cadreMap?: maplibregl.Map }).__cadreMap = instance; // prise pour les tests e2e
       }
       setMap(instance);

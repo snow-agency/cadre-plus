@@ -12,3 +12,6 @@ apps/web/public/maplibre/
 apps/web/test-results/
 apps/web/playwright-report/
 docs/cahier-des-charges/node_modules/
+
+*.tsbuildinfo
+next-env.d.ts

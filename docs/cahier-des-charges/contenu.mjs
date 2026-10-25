@@ -479,7 +479,8 @@ export const blocs = [
   {
     t: "formula", lines: [
       "ICV = 0,15 × école + 0,15 × santé + 0,15 × eau + 0,15 × électrification",
-      "      + 0,15 × drainage + 0,10 × déchets + 0,10 × espaces verts + 0,05 × inondation",
+      "    + 0,15 × drainage + 0,10 × déchets + 0,10 × espaces verts",
+      "    + 0,05 × inondation",
     ],
   },
   {
@@ -506,7 +507,8 @@ export const blocs = [
   { t: "p", text: "**Valeur d'un plan d'investissement.** Population × gain d'ICV × facteur d'équité, sommé sur les quartiers :" },
   {
     t: "formula", lines: [
-      "facteur d'équité = 1 + équité × (100 − ICV du quartier) / 50      (équité entre 0 et 1)",
+      "facteur d'équité = 1 + équité × (100 − ICV du quartier) / 50",
+      "avec équité comprise entre 0 (efficacité pure) et 1 (priorité forte aux quartiers défavorisés)",
     ],
   },
 

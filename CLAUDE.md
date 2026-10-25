@@ -56,12 +56,26 @@ national d'un coup.
   `npm run` qui lance l'exe Python du venv via cmd.exe s'arrête silencieusement.
   `predev` copie le worker de MapLibre dans `apps/web/public/maplibre/`.
 - `npm run dev:web` / `npm run dev:api` : un seul des deux.
-- Tests backend : dans `services/api`, `.venv/Scripts/python.exe -m pytest -q`.
+- Tests backend (40) : dans `services/api`, `.venv/Scripts/python.exe -m pytest -q`.
 - Tests e2e (navigateur réel, Chromium via Playwright) : dans `apps/web`,
   `npx playwright test` (serveurs déjà lancés ou démarrés automatiquement ;
   `E2E_SHOTS_DIR=<dossier>` pour sauvegarder des captures).
 - Typage : dans `apps/web`, `npx tsc --noEmit`.
 - Régénérer les données : voir `data/README.md`.
+
+## Déploiement (Vercel + Render)
+- Front `apps/web` → **Vercel** (Root Directory = `apps/web`). Variable : `NEXT_PUBLIC_API_URL` =
+  URL Render (intégrée au build : redéployer après changement).
+- Back `services/api` → **Render** via `render.yaml` (Blueprint, Python 3.13, Frankfurt, plan gratuit :
+  mise en veille après 15 min, premier appel lent). Variables : `RODIUM_API_KEY` (secret),
+  `RODIUM_API_URL`, `RODIUM_MODEL`, `CORS_ORIGINS` (URL Vercel, sans « / » final),
+  `CORS_ORIGIN_REGEX` (optionnel, prévisualisations Vercel), `AI_RATE_LIMIT_PER_HOUR` (30 par IP),
+  `AI_GLOBAL_LIMIT_PER_HOUR` (300). L'API lit `data/output/*.geojson` à la racine du dépôt : ces
+  fichiers doivent être commités.
+- Les appels IA sont limités par adresse IP et globalement (`app/ratelimit.py`, en mémoire : une seule
+  instance). Sans cela le point d'accès public vide le crédit du fournisseur IA.
+- Test e2e contre un build de production : `NEXT_PUBLIC_E2E=1 npm run build -w @cadre-plus/web`
+  (expose la prise de test `window.__cadreMap`), puis `next start`, puis `npx playwright test`.
 
 ## Pièges connus
 - **MapLibre v6 + Next/Turbopack** : le worker ne se charge pas tout seul
@@ -72,6 +86,8 @@ national d'un coup.
 - Les tests e2e ne jugent pas le rendu visuel : toujours regarder les captures.
 - Windows : un port peut rester « occupé » par un PID fantôme (8000 l'a été) ;
   l'API utilise 8001.
+- Les couches de données sont ajoutées à `style.load` (pas `load`) : sinon elles attendent toutes les
+  tuiles du fond de carte, très lent en connexion faible.
 - Fond de carte : tuiles OpenStreetMap (usage léger) ; en production, fournisseur
   dédié via `NEXT_PUBLIC_MAP_STYLE_URL`.
 

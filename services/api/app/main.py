@@ -1,17 +1,25 @@
+import os
 from typing import Literal
 
 import httpx
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import Depends, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
 from . import ai_client, assistant, data_access, investissements, placement
+from .ratelimit import limiter_ia
 
 app = FastAPI(title="Cadre+ API", version="0.2.0")
 
+def origines_autorisees() -> list[str]:
+    brut = os.environ.get("CORS_ORIGINS", "http://localhost:3000")
+    return [o.strip().rstrip("/") for o in brut.split(",") if o.strip()]
+
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=origines_autorisees(),
+    allow_origin_regex=os.environ.get("CORS_ORIGIN_REGEX") or None,
     allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
@@ -109,11 +117,11 @@ def plan_investissements(body: PlanRequest) -> dict:
         raise HTTPException(status_code=422, detail=f"Levier inconnu : {e.args[0]}")
 
 
-@app.post("/api/assistant")
+@app.post("/api/assistant", dependencies=[Depends(limiter_ia)])
 def ask_assistant(body: QuestionRequest) -> dict:
     return {"answer": _appel_ia(assistant.answer_question, body.question)}
 
 
-@app.post("/api/assistant/avis")
+@app.post("/api/assistant/avis", dependencies=[Depends(limiter_ia)])
 def avis_assistant(body: AvisRequest) -> dict:
     return {"answer": _appel_ia(assistant.commenter, body.type, body.payload)}
