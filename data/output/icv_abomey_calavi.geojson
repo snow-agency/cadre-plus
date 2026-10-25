@@ -1,0 +1,469 @@
+{
+  "type": "FeatureCollection",
+  "metadata": {
+    "synthetic": true,
+    "source": "Donnée synthétique générée pour démonstration — ne pas présenter comme donnée officielle",
+    "zone": "Commune d'Abomey-Calavi (quartiers réels utilisés comme ancrage géographique illustratif)",
+    "methodologie_icv": "ICV = 0.15*ecole + 0.15*sante + 0.15*eau + 0.15*electrification + 0.15*drainage + 0.1*dechets + 0.1*espaces_verts + 0.05*inondation",
+    "poids_icv": {
+      "ecole": 0.15,
+      "sante": 0.15,
+      "eau": 0.15,
+      "electrification": 0.15,
+      "drainage": 0.15,
+      "dechets": 0.1,
+      "espaces_verts": 0.1,
+      "inondation": 0.05
+    }
+  },
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "quartier-centre",
+        "nom_quartier": "Abomey-Calavi Centre",
+        "icv": 75.2,
+        "population": 85000,
+        "indicateurs_bruts": {
+          "temps_acces_ecole_min": 8,
+          "temps_acces_sante_min": 12,
+          "temps_acces_eau_min": 6,
+          "taux_electrification_pct": 88,
+          "score_drainage_0_10": 7,
+          "couverture_collecte_dechets_pct": 75,
+          "espaces_verts_pct_surface": 8,
+          "risque_inondation_0_10": 3
+        },
+        "sous_scores_normalises_0_100": {
+          "ecole": 82.2,
+          "sante": 80.0,
+          "eau": 86.7,
+          "electrification": 88.0,
+          "drainage": 70.0,
+          "dechets": 75.0,
+          "espaces_verts": 32.0,
+          "inondation": 70.0
+        }
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              2.3442000000000003,
+              6.4439
+            ],
+            [
+              2.3642,
+              6.4439
+            ],
+            [
+              2.3642,
+              6.4639
+            ],
+            [
+              2.3442000000000003,
+              6.4639
+            ],
+            [
+              2.3442000000000003,
+              6.4439
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "quartier-godomey",
+        "nom_quartier": "Godomey",
+        "icv": 65.7,
+        "population": 120000,
+        "indicateurs_bruts": {
+          "temps_acces_ecole_min": 10,
+          "temps_acces_sante_min": 15,
+          "temps_acces_eau_min": 8,
+          "taux_electrification_pct": 80,
+          "score_drainage_0_10": 5,
+          "couverture_collecte_dechets_pct": 65,
+          "espaces_verts_pct_surface": 6,
+          "risque_inondation_0_10": 6
+        },
+        "sous_scores_normalises_0_100": {
+          "ecole": 77.8,
+          "sante": 75.0,
+          "eau": 82.2,
+          "electrification": 80.0,
+          "drainage": 50.0,
+          "dechets": 65.0,
+          "espaces_verts": 24.0,
+          "inondation": 40.0
+        }
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              2.3332,
+              6.3754
+            ],
+            [
+              2.3531999999999997,
+              6.3754
+            ],
+            [
+              2.3531999999999997,
+              6.3953999999999995
+            ],
+            [
+              2.3332,
+              6.3953999999999995
+            ],
+            [
+              2.3332,
+              6.3754
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "quartier-togba",
+        "nom_quartier": "Togba",
+        "icv": 58.2,
+        "population": 64000,
+        "indicateurs_bruts": {
+          "temps_acces_ecole_min": 15,
+          "temps_acces_sante_min": 20,
+          "temps_acces_eau_min": 12,
+          "taux_electrification_pct": 65,
+          "score_drainage_0_10": 4,
+          "couverture_collecte_dechets_pct": 50,
+          "espaces_verts_pct_surface": 10,
+          "risque_inondation_0_10": 5
+        },
+        "sous_scores_normalises_0_100": {
+          "ecole": 66.7,
+          "sante": 66.7,
+          "eau": 73.3,
+          "electrification": 65.0,
+          "drainage": 40.0,
+          "dechets": 50.0,
+          "espaces_verts": 40.0,
+          "inondation": 50.0
+        }
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              2.2949,
+              6.4551
+            ],
+            [
+              2.3148999999999997,
+              6.4551
+            ],
+            [
+              2.3148999999999997,
+              6.475099999999999
+            ],
+            [
+              2.2949,
+              6.475099999999999
+            ],
+            [
+              2.2949,
+              6.4551
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "quartier-akassato",
+        "nom_quartier": "Akassato",
+        "icv": 57.5,
+        "population": 48000,
+        "indicateurs_bruts": {
+          "temps_acces_ecole_min": 18,
+          "temps_acces_sante_min": 25,
+          "temps_acces_eau_min": 15,
+          "taux_electrification_pct": 60,
+          "score_drainage_0_10": 5,
+          "couverture_collecte_dechets_pct": 45,
+          "espaces_verts_pct_surface": 12,
+          "risque_inondation_0_10": 2
+        },
+        "sous_scores_normalises_0_100": {
+          "ecole": 60.0,
+          "sante": 58.3,
+          "eau": 66.7,
+          "electrification": 60.0,
+          "drainage": 50.0,
+          "dechets": 45.0,
+          "espaces_verts": 48.0,
+          "inondation": 80.0
+        }
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              2.3556000000000004,
+              6.4974
+            ],
+            [
+              2.3756,
+              6.4974
+            ],
+            [
+              2.3756,
+              6.517399999999999
+            ],
+            [
+              2.3556000000000004,
+              6.517399999999999
+            ],
+            [
+              2.3556000000000004,
+              6.4974
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "quartier-zinvie",
+        "nom_quartier": "Zinvié",
+        "icv": 39.8,
+        "population": 38000,
+        "indicateurs_bruts": {
+          "temps_acces_ecole_min": 25,
+          "temps_acces_sante_min": 35,
+          "temps_acces_eau_min": 20,
+          "taux_electrification_pct": 40,
+          "score_drainage_0_10": 2,
+          "couverture_collecte_dechets_pct": 25,
+          "espaces_verts_pct_surface": 15,
+          "risque_inondation_0_10": 8
+        },
+        "sous_scores_normalises_0_100": {
+          "ecole": 44.4,
+          "sante": 41.7,
+          "eau": 55.6,
+          "electrification": 40.0,
+          "drainage": 20.0,
+          "dechets": 25.0,
+          "espaces_verts": 60.0,
+          "inondation": 20.0
+        }
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              2.3468,
+              6.603400000000001
+            ],
+            [
+              2.3667999999999996,
+              6.603400000000001
+            ],
+            [
+              2.3667999999999996,
+              6.6234
+            ],
+            [
+              2.3468,
+              6.6234
+            ],
+            [
+              2.3468,
+              6.603400000000001
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "quartier-hevie",
+        "nom_quartier": "Hêvié",
+        "icv": 42.1,
+        "population": 30000,
+        "indicateurs_bruts": {
+          "temps_acces_ecole_min": 30,
+          "temps_acces_sante_min": 40,
+          "temps_acces_eau_min": 22,
+          "taux_electrification_pct": 45,
+          "score_drainage_0_10": 3,
+          "couverture_collecte_dechets_pct": 30,
+          "espaces_verts_pct_surface": 18,
+          "risque_inondation_0_10": 4
+        },
+        "sous_scores_normalises_0_100": {
+          "ecole": 33.3,
+          "sante": 33.3,
+          "eau": 51.1,
+          "electrification": 45.0,
+          "drainage": 30.0,
+          "dechets": 30.0,
+          "espaces_verts": 72.0,
+          "inondation": 60.0
+        }
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              2.2471,
+              6.4039
+            ],
+            [
+              2.2670999999999997,
+              6.4039
+            ],
+            [
+              2.2670999999999997,
+              6.4239
+            ],
+            [
+              2.2471,
+              6.4239
+            ],
+            [
+              2.2471,
+              6.4039
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "quartier-kpanroun",
+        "nom_quartier": "Kpanroun",
+        "icv": 40.0,
+        "population": 26000,
+        "indicateurs_bruts": {
+          "temps_acces_ecole_min": 28,
+          "temps_acces_sante_min": 38,
+          "temps_acces_eau_min": 25,
+          "taux_electrification_pct": 38,
+          "score_drainage_0_10": 2,
+          "couverture_collecte_dechets_pct": 20,
+          "espaces_verts_pct_surface": 20,
+          "risque_inondation_0_10": 3
+        },
+        "sous_scores_normalises_0_100": {
+          "ecole": 37.8,
+          "sante": 36.7,
+          "eau": 44.4,
+          "electrification": 38.0,
+          "drainage": 20.0,
+          "dechets": 20.0,
+          "espaces_verts": 80.0,
+          "inondation": 70.0
+        }
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              2.3567,
+              6.6639
+            ],
+            [
+              2.3766999999999996,
+              6.6639
+            ],
+            [
+              2.3766999999999996,
+              6.6838999999999995
+            ],
+            [
+              2.3567,
+              6.6838999999999995
+            ],
+            [
+              2.3567,
+              6.6639
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "quartier-ouedo",
+        "nom_quartier": "Ouèdo",
+        "icv": 33.4,
+        "population": 22000,
+        "indicateurs_bruts": {
+          "temps_acces_ecole_min": 35,
+          "temps_acces_sante_min": 45,
+          "temps_acces_eau_min": 28,
+          "taux_electrification_pct": 32,
+          "score_drainage_0_10": 2,
+          "couverture_collecte_dechets_pct": 15,
+          "espaces_verts_pct_surface": 22,
+          "risque_inondation_0_10": 5
+        },
+        "sous_scores_normalises_0_100": {
+          "ecole": 22.2,
+          "sante": 25.0,
+          "eau": 37.8,
+          "electrification": 32.0,
+          "drainage": 20.0,
+          "dechets": 15.0,
+          "espaces_verts": 88.0,
+          "inondation": 50.0
+        }
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              2.2571000000000003,
+              6.4424
+            ],
+            [
+              2.2771,
+              6.4424
+            ],
+            [
+              2.2771,
+              6.4624
+            ],
+            [
+              2.2571000000000003,
+              6.4624
+            ],
+            [
+              2.2571000000000003,
+              6.4424
+            ]
+          ]
+        ]
+      }
+    }
+  ]
+}

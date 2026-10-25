@@ -1,0 +1,13 @@
+{
+  "name": "cadre-plus",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "dev:web": "npm run dev -w @cadre-plus/web",
+    "dev:api": "services/api/.venv/Scripts/python.exe -m uvicorn app.main:app --port 8001 --app-dir services/api"
+  }
+}

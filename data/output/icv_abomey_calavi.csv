@@ -1,0 +1,9 @@
+id,nom_quartier,icv,population,temps_acces_ecole_min,temps_acces_sante_min,temps_acces_eau_min,taux_electrification_pct,score_drainage_0_10,couverture_collecte_dechets_pct,espaces_verts_pct_surface,risque_inondation_0_10
+quartier-centre,Abomey-Calavi Centre,75.2,85000,8,12,6,88,7,75,8,3
+quartier-godomey,Godomey,65.7,120000,10,15,8,80,5,65,6,6
+quartier-togba,Togba,58.2,64000,15,20,12,65,4,50,10,5
+quartier-akassato,Akassato,57.5,48000,18,25,15,60,5,45,12,2
+quartier-zinvie,Zinvié,39.8,38000,25,35,20,40,2,25,15,8
+quartier-hevie,Hêvié,42.1,30000,30,40,22,45,3,30,18,4
+quartier-kpanroun,Kpanroun,40.0,26000,28,38,25,38,2,20,20,3
+quartier-ouedo,Ouèdo,33.4,22000,35,45,28,32,2,15,22,5

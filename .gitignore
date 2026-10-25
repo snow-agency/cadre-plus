@@ -1,0 +1,14 @@
+node_modules/
+.next/
+out/
+dist/
+*.log
+.env
+.env.local
+__pycache__/
+*.pyc
+.venv/
+apps/web/public/maplibre/
+apps/web/test-results/
+apps/web/playwright-report/
+docs/cahier-des-charges/node_modules/

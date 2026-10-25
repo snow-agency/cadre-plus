@@ -1,0 +1,183 @@
+{
+  "type": "FeatureCollection",
+  "metadata": {
+    "synthetic": true,
+    "source": "Donnée synthétique générée pour démonstration — ne pas présenter comme donnée officielle",
+    "zone": "Trois parcelles illustratives, quartier de Togba, Abomey-Calavi",
+    "methodologie_indice_constructibilite": "indice = 0.5*portance_normalisee + 0.4*score_risque_inondation_inverse + 0.1*score_pente"
+  },
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "parcelle-togba-01",
+        "nom": "P1 — Plateau sableux",
+        "surface_m2": 3200,
+        "sol_type": "sable latéritique",
+        "portance_kpa": 180,
+        "risque_inondation": "faible",
+        "altitude_m": 42,
+        "pente_pct": 2,
+        "batiments_existants": 0,
+        "voie_acces_cote": "nord",
+        "zone_naturelle_cotes": [],
+        "zone_naturelle_a_proximite": false,
+        "indice_constructibilite_0_100": 93.0,
+        "recommandation": "Constructible — zone prioritaire. Fondations standards (semelles isolées). Implantation du bâtiment principal à optimiser vis-à-vis de la voie d'accès. Point de collecte des déchets en bordure de voie d'accès."
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              2.3046739848915765,
+              6.464810601045453
+            ],
+            [
+              2.3051260151084234,
+              6.464810601045453
+            ],
+            [
+              2.3051260151084234,
+              6.465389398954546
+            ],
+            [
+              2.3046739848915765,
+              6.465389398954546
+            ],
+            [
+              2.3046739848915765,
+              6.464810601045453
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "parcelle-togba-02",
+        "nom": "P2 — Zone mixte",
+        "surface_m2": 2800,
+        "sol_type": "argilo-sableux",
+        "portance_kpa": 110,
+        "risque_inondation": "moyen",
+        "altitude_m": 28,
+        "pente_pct": 4,
+        "batiments_existants": 1,
+        "voie_acces_cote": "est",
+        "zone_naturelle_cotes": [
+          "ouest"
+        ],
+        "zone_naturelle_a_proximite": true,
+        "indice_constructibilite_0_100": 53.5,
+        "recommandation": "Constructible sous conditions — renforcer les fondations (semelles filantes profondes ou radier), prévoir un système de drainage périphérique, conserver une bande tampon de 10 m en bordure de toute zone naturelle voisine.",
+        "emprise_existante": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                2.3068904058020103,
+                6.463596256805397
+              ],
+              [
+                2.3069627304436184,
+                6.463596256805397
+              ],
+              [
+                2.3069627304436184,
+                6.463686693978692
+              ],
+              [
+                2.3068904058020103,
+                6.463686693978692
+              ],
+              [
+                2.3068904058020103,
+                6.463596256805397
+              ]
+            ]
+          ]
+        }
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              2.3065468637543707,
+              6.463523907066761
+            ],
+            [
+              2.3070531362456292,
+              6.463523907066761
+            ],
+            [
+              2.3070531362456292,
+              6.4639760929332395
+            ],
+            [
+              2.3065468637543707,
+              6.4639760929332395
+            ],
+            [
+              2.3065468637543707,
+              6.463523907066761
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "parcelle-togba-03",
+        "nom": "P3 — Bas-fond",
+        "surface_m2": 4096,
+        "sol_type": "argile limoneuse saturée",
+        "portance_kpa": 60,
+        "risque_inondation": "élevé",
+        "altitude_m": 15,
+        "pente_pct": 1,
+        "batiments_existants": 0,
+        "voie_acces_cote": "nord",
+        "zone_naturelle_cotes": [
+          "nord",
+          "sud",
+          "est",
+          "ouest"
+        ],
+        "zone_naturelle_a_proximite": true,
+        "indice_constructibilite_0_100": 28.0,
+        "recommandation": "Non recommandé à la construction — sol à faible portance et/ou risque d'inondation élevé. Proposition : conserver comme zone naturelle / tampon écologique ou bassin de rétention des eaux pluviales. Ne pas y implanter de point de collecte des déchets."
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              2.3023107020341684,
+              6.462410601045454
+            ],
+            [
+              2.3028892979658315,
+              6.462410601045454
+            ],
+            [
+              2.3028892979658315,
+              6.462989398954546
+            ],
+            [
+              2.3023107020341684,
+              6.462989398954546
+            ],
+            [
+              2.3023107020341684,
+              6.462410601045454
+            ]
+          ]
+        ]
+      }
+    }
+  ]
+}
