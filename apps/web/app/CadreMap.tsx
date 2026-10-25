@@ -1,14 +1,17 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import * as maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
+import { type Onglet } from "../components/DiagnosticPanel";
 import HelpTip from "../components/HelpTip";
+import { AccueilModal, PremiersPas } from "../components/Onboarding";
 import QuartierCard from "../components/QuartierCard";
 import QuartierMarkers from "../components/QuartierMarkers";
 import { getJson } from "../lib/api";
 import { API_URL } from "../lib/config";
 import { DEGRADE_ICV_CSS, expressionIcv } from "../lib/couleurs";
+import { type Etape, useOnboarding } from "../lib/onboarding";
 import { MAP_STYLE, STYLE_REPLI } from "../lib/mapStyle";
 import type { Quartier } from "../lib/types";
 import Assistant from "./Assistant";
@@ -110,6 +113,10 @@ export default function CadreMap() {
   const [visible, setVisible] = useState<Record<GroupName, boolean>>({ icv: true, parcelles: true, amenagement: true });
   const [quartiers, setQuartiers] = useState<Quartier[]>([]);
   const [selection, setSelection] = useState<string | null>(null);
+  const [onglet, setOnglet] = useState<Onglet>("diagnostic");
+  const [zoomParcelle, setZoomParcelle] = useState(0);
+  const idCalques = useId();
+  const { etat, accueilOuvert, fermerAccueil, marquer, masquer } = useOnboarding();
   const survolRef = useRef<string | null>(null);
   const quartiersRef = useRef<Quartier[]>([]);
   quartiersRef.current = quartiers;
@@ -220,7 +227,24 @@ export default function CadreMap() {
     selectionPrecedente.current = selection;
   }, [map, selection]);
 
+  useEffect(() => {
+    if (selection) marquer("quartier");
+  }, [selection, marquer]);
+
   const quartierChoisi = quartiers.find((q) => q.id === selection) ?? null;
+
+  const lancerEtape = useCallback((e: Etape) => {
+    if (e === "quartier") {
+      setOnglet("diagnostic");
+      const pire = [...quartiersRef.current].sort((a, b) => a.icv - b.icv)[0];
+      if (pire) choisir(pire.id, map);
+    } else if (e === "parcelle") {
+      setOnglet("amenagement");
+      setZoomParcelle((n) => n + 1);
+    } else {
+      setOnglet("budget");
+    }
+  }, [choisir, map]);
 
   return (
     <div className="relative h-full w-full overflow-hidden">
@@ -228,44 +252,54 @@ export default function CadreMap() {
         <div ref={conteneur} className="h-full w-full" />
       </div>
 
-      <div className="pointer-events-none absolute left-3 top-3 z-10 flex max-h-[calc(100%-5.5rem)] w-72 flex-col gap-3 overflow-y-auto pb-1">
-        <section className="glass pointer-events-auto p-4" aria-label="Couches de la carte">
-          <p className="label-caps">Couches</p>
-          <ul className="mt-2 space-y-0.5">
-            {CALQUES.map((c) => (
-              <li key={c.id}>
-                <label className="flex cursor-pointer items-center justify-between gap-3 py-1.5">
+      <div className="pointer-events-none absolute left-3 top-3 z-10 flex max-h-[calc(100%-5.5rem)] w-72 flex-col gap-3 overflow-y-auto pb-6 no-scrollbar fade-bottom">
+        <section className="glass pointer-events-auto p-4" aria-label="Légende de la carte">
+          <p className="label-caps">Ce que vous voyez</p>
+          <h2 className="mt-1 text-sm font-bold text-ink">
+            Note du cadre de vie par quartier
+            <HelpTip title={CALQUES[0].aide.titre} text={CALQUES[0].aide.texte} />
+          </h2>
+          <div className="mt-2.5">
+            <div className="h-2.5 rounded-full" style={{ background: DEGRADE_ICV_CSS }} />
+            <div className="mt-1 flex justify-between text-[11px] font-medium text-muted">
+              <span>0 · dégradé</span>
+              <span>100 · bon</span>
+            </div>
+          </div>
+          <p className="mt-2.5 text-xs leading-relaxed text-muted">Cliquez sur un quartier de la carte pour comprendre sa note.</p>
+
+          <details className="mt-3 border-t border-line pt-3 text-sm">
+            <summary className="cursor-pointer text-xs font-semibold text-muted hover:text-ink">Afficher / masquer des couches</summary>
+            <ul className="mt-2 space-y-0.5">
+              {CALQUES.map((c) => (
+                <li key={c.id} className="flex items-center justify-between gap-3 py-1.5">
                   <span className="text-sm font-medium text-ink">
-                    {c.label}
-                    <HelpTip title={c.aide.titre} text={c.aide.texte} />
+                    <label htmlFor={`${idCalques}-${c.id}`} className="cursor-pointer">{c.label}</label>
+                    {c.id !== "icv" && <HelpTip title={c.aide.titre} text={c.aide.texte} />}
                   </span>
-                  <span className="relative inline-flex shrink-0 items-center">
+                  <label className="relative inline-flex shrink-0 cursor-pointer items-center">
                     <input
+                      id={`${idCalques}-${c.id}`}
                       type="checkbox"
                       role="switch"
                       checked={visible[c.id]}
-                      onChange={(e) => setVisible((v) => ({ ...v, [c.id]: e.target.checked }))}
+                      onChange={(e) => {
+                        const coche = e.target.checked;
+                        setVisible((v) => ({ ...v, [c.id]: coche }));
+                      }}
                       aria-label={`Afficher : ${c.label}`}
                       className="peer sr-only"
                     />
                     <span className="h-5 w-9 rounded-full bg-slate-300 transition peer-checked:bg-brand-600 peer-focus-visible:ring-2 peer-focus-visible:ring-brand-600 peer-focus-visible:ring-offset-2" />
                     <span className="absolute left-0.5 h-4 w-4 rounded-full bg-white shadow transition peer-checked:translate-x-4" />
-                  </span>
-                </label>
-              </li>
-            ))}
-          </ul>
+                  </label>
+                </li>
+              ))}
+            </ul>
+          </details>
 
-          <div className="mt-3">
-            <div className="h-2 rounded-full" style={{ background: DEGRADE_ICV_CSS }} />
-            <div className="mt-1 flex justify-between text-[11px] font-medium text-muted">
-              <span>Dégradé (0)</span>
-              <span>Bon (100)</span>
-            </div>
-          </div>
-
-          <details className="mt-3 text-xs text-body">
-            <summary className="cursor-pointer font-medium text-muted hover:text-ink">Légende de l&apos;aménagement</summary>
+          <details className="mt-2 text-xs text-body">
+            <summary className="cursor-pointer font-semibold text-muted hover:text-ink">Légende de l&apos;aménagement</summary>
             <ul className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1.5">
               <li className="flex items-center gap-1.5"><i className="h-2.5 w-2.5 rounded-sm bg-[#2563eb]" /> Bâtiment</li>
               <li className="flex items-center gap-1.5"><i className="h-2.5 w-2.5 rounded-full bg-[#f59e0b]" /> Collecte déchets</li>
@@ -287,8 +321,26 @@ export default function CadreMap() {
         selection={selection}
         onSelect={(id) => choisir(id, map)}
       />
-      <ModulePanel map={map} />
+      <ModulePanel
+        map={map}
+        onglet={onglet}
+        onOnglet={setOnglet}
+        quartiers={quartiers}
+        selection={selection}
+        onSelectQuartier={(id) => choisir(id, map)}
+        zoomParcelle={zoomParcelle}
+        onParcelleVue={() => marquer("parcelle")}
+        onBudgetUtilise={() => marquer("budget")}
+      />
+      <PremiersPas fait={etat.fait} masque={etat.masque} onMasquer={() => masquer(true)} onAction={lancerEtape} />
       <Assistant />
+      <AccueilModal
+        ouvert={accueilOuvert}
+        onClose={(commencer) => {
+          fermerAccueil();
+          if (commencer) lancerEtape("quartier");
+        }}
+      />
     </div>
   );
 }

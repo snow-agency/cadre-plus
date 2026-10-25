@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import * as maplibregl from "maplibre-gl";
 import { AlertTriangle, ArrowDown, ArrowLeft, ArrowRight, ArrowUp, CheckCircle2, Sparkles, XCircle } from "lucide-react";
 import HelpTip from "../../components/HelpTip";
@@ -37,6 +37,7 @@ export default function ManualEditor({
   const [error, setError] = useState<string | null>(null);
   const [avis, setAvis] = useState<string | null>(null);
   const [avisLoading, setAvisLoading] = useState(false);
+  const idRotation = useId();
   const batMarker = useRef<maplibregl.Marker | null>(null);
   const pointMarker = useRef<maplibregl.Marker | null>(null);
 
@@ -187,13 +188,13 @@ export default function ManualEditor({
         </label>
       </div>
 
-      <label className="block font-medium text-ink">
-        Rotation : {bat.angle_deg}°
+      <div className="font-medium text-ink">
+        <label htmlFor={idRotation}>Rotation : {bat.angle_deg}°</label>
         <HelpTip title="Rotation" text="Fait pivoter le bâtiment autour de son centre. Un bâtiment pivoté dépasse plus facilement les retraits : le serveur le signale." />
-        <input type="range" min={-90} max={90} step={5} value={bat.angle_deg}
-          onChange={(e) => setBat((b) => ({ ...b, angle_deg: Number(e.target.value) }))}
+        <input id={idRotation} type="range" min={-90} max={90} step={5} value={bat.angle_deg}
+          onChange={(e) => { const angle = Number(e.target.value); setBat((b) => ({ ...b, angle_deg: angle })); }}
           className="mt-1 w-full accent-brand-600" />
-      </label>
+      </div>
 
       <div className="flex items-center gap-1.5">
         <span className="font-medium text-ink">Déplacer de 1 m :</span>

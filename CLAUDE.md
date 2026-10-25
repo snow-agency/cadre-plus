@@ -32,6 +32,10 @@ national d'un coup.
 - **Design system** : `docs/design-system.md` (mélange des styles Sleek + Bento + Enterprise du dépôt
   awesome-design-skills, installés dans `.agents/skills/`). Jetons dans `apps/web/app/globals.css`, échelle
   de l'ICV dans `apps/web/lib/couleurs.ts`. Violet = IA uniquement. Ne pas copier un site tiers.
+- **Parcours** : l'app s'ouvre sur une fenêtre d'accueil (`components/Onboarding.tsx`) puis une liste « Premiers pas »
+  (3 étapes : quartier, parcelle, budget) ; avancement dans localStorage `cadre-plus:onboarding:v1`
+  (`lib/onboarding.ts`) ; bouton « Visite guidée » de l'en-tête pour relancer. Panneau de droite = 3 onglets
+  Diagnostic / Aménager / Budget (état `onglet` dans `CadreMap.tsx`). Langage simple, pas de jargon en premier plan.
 - **Pages** : `/` page d'accueil (produit), `/app` application cartographique, `/guide` mode d'emploi.
 - Ne jamais lire/afficher/committer `services/api/.env` (clé API).
 
@@ -82,6 +86,12 @@ national d'un coup.
   (expose la prise de test `window.__cadreMap`), puis `next start`, puis `npx playwright test`.
 
 ## Pièges connus
+- **`<label>` + HelpTip** : le premier élément « labelable » d'un `<label>` reçoit le clic. Un « ? » (bouton) dans un
+  label vole le clic de l'interrupteur/curseur. Toujours : `<label htmlFor=id>` + HelpTip à côté, jamais dedans.
+- **Info-bulles** (`HelpTip`) : portail dans `document.body`, `position: fixed`, `pointer-events-none` (sinon rognées
+  par `overflow` des panneaux). Zones qui défilent : classes `no-scrollbar fade-bottom` (pas de barre visible).
+- **Tests e2e** : `beforeEach` pose `cadre-plus:onboarding:v1` via `addInitScript` pour que la fenêtre d'accueil ne
+  bloque pas ; la liste du Budget se cible par `#panel-budget`.
 - **Marqueurs MapLibre** : ne jamais réaffecter `el.className` (efface la classe de positionnement de
   MapLibre → pastille en `position: static`, décalée). Utiliser `classList`.
 - **Conteneur de carte** : MapLibre force `position: relative` ; donner au conteneur `h-full w-full` dans un

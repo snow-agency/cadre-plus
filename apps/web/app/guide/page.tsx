@@ -40,7 +40,7 @@ function Note({ children, tone = "info" }: { children: React.ReactNode; tone?: "
 
 function Table({ head, rows }: { head: string[]; rows: string[][] }) {
   return (
-    <div className="overflow-x-auto">
+    <div className="no-scrollbar overflow-x-auto">
       <table className="w-full border-collapse text-sm">
         <thead>
           <tr>
@@ -98,6 +98,14 @@ export default function Guide() {
         </header>
 
         <Section id="demarrer" title="1. Démarrer">
+          <Note>
+            <strong>Première visite ?</strong> À l&apos;ouverture de l&apos;application, une fenêtre de bienvenue explique
+            en trois étapes ce que fait Cadre+. Choisissez « Commencer (2 minutes) » : l&apos;application vous emmène
+            d&apos;abord sur le quartier le moins bien noté. Une liste « Premiers pas » (en bas de l&apos;écran) coche
+            ensuite vos étapes : <strong>1.</strong> voir un quartier, <strong>2.</strong> voir une parcelle,{" "}
+            <strong>3.</strong> répartir un budget. Vous pouvez la masquer, et relancer la visite à tout moment avec le
+            bouton « Visite guidée » de l&apos;en-tête.
+          </Note>
           <p>
             Depuis le dossier du projet, la commande <code className="rounded bg-gray-100 px-1">npm run dev</code>{" "}
             lance en une fois l&apos;application web (<code className="rounded bg-gray-100 px-1">http://localhost:3000</code>)
@@ -122,8 +130,9 @@ export default function Guide() {
             rows={[
               ["En-tête (haut)", "Navigation (Accueil, Application, Mode d'emploi) et pastille « Données synthétiques » : rappel permanent que les données sont inventées."],
               ["Carte (centre)", "Zones de quartier colorées selon leur ICV, avec une pastille « nom + note ». Molette pour zoomer, glisser pour déplacer. Cliquez sur un quartier pour ouvrir sa fiche ; les pastilles se masquent quand vous zoomez sur un quartier."],
-              ["Cadre en haut à gauche", "Interrupteurs pour afficher ou masquer les couches, échelle de couleurs et légende. La fiche du quartier choisi s'affiche juste dessous."],
-              ["Panneau de droite", "Deux onglets : « Conception assistée » et « Investissements »."],
+              ["Cadre en haut à gauche", "Légende : l'échelle de couleurs de la note (0 = dégradé, 100 = bon). Le menu « Afficher / masquer des couches » contient les interrupteurs, la légende de l'aménagement se déplie aussi. La fiche du quartier choisi s'affiche juste dessous."],
+              ["Panneau de droite", "Trois onglets, dans l'ordre : « Diagnostic » (où le cadre de vie va-t-il le moins bien ?), « Aménager » (où construire sur une parcelle ?) et « Budget » (où investir ?)."],
+              ["Liste « Premiers pas » (bas)", "Trois étapes cliquables pour découvrir l'outil ; masquable, et réaffichée par « Visite guidée »."],
               ["Bouton « Assistant IA » (bas à gauche)", "Ouvre la fenêtre de discussion : posez une question en français ou choisissez une suggestion."],
             ]}
           />
@@ -203,7 +212,7 @@ export default function Guide() {
           <Note tone="warn">Ces prix sont des hypothèses inventées pour la démonstration. Ils doivent être remplacés par des barèmes réels avant tout usage décisionnel.</Note>
           <H3>Utiliser l&apos;écran</H3>
           <p>
-            Onglet « Conception assistée » : chaque parcelle a une fiche avec la proposition automatique. Le bouton{" "}
+            Onglet « Aménager » : chaque parcelle a une fiche avec la proposition automatique. Le bouton{" "}
             <strong>Zoom</strong> centre la carte dessus. Aux niveaux de zoom élevés (15 et plus), la carte montre le bâtiment
             (bleu), le point de collecte (orange), les zones tampons (vert foncé), le bassin de rétention (bleu clair) et le
             bâti existant (gris).

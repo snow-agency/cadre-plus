@@ -99,7 +99,7 @@ export default function Assistant() {
             </p>
           )}
           {answer && (
-            <div className="mt-3 max-h-64 overflow-auto rounded-xl bg-ai-50 px-3.5 py-3 text-sm leading-relaxed text-ink">
+            <div className="no-scrollbar mt-3 max-h-64 overflow-auto rounded-xl bg-ai-50 px-3.5 py-3 text-sm leading-relaxed text-ink">
               <p className="whitespace-pre-wrap">{answer}</p>
               <p className="mt-2 text-xs text-muted">Réponse générée par IA à partir de données synthétiques.</p>
             </div>

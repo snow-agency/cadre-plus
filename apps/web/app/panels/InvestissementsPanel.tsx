@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { RotateCcw, Sparkles } from "lucide-react";
 import HelpTip from "../../components/HelpTip";
 import { isAbort, postJson } from "../../lib/api";
@@ -19,7 +19,9 @@ const ORIGINE_LABEL: Record<QuartierPlan["origine"], string> = {
   aucun: "Rien",
 };
 
-export default function InvestissementsPanel() {
+export default function InvestissementsPanel({ onUtilise }: { onUtilise: () => void }) {
+  const idBudget = useId();
+  const idEquite = useId();
   const [budget, setBudget] = useState(5000);
   const [equite, setEquite] = useState(0.5);
   const [completerAuto, setCompleterAuto] = useState(true);
@@ -49,7 +51,8 @@ export default function InvestissementsPanel() {
     };
   }, [budget, equite, completerAuto, imposes]);
 
-  const basculer = (q: QuartierPlan) =>
+  const basculer = (q: QuartierPlan) => {
+    onUtilise();
     setImposes((cur) => {
       if (q.id in cur) {
         const { [q.id]: _retire, ...reste } = cur;
@@ -57,12 +60,15 @@ export default function InvestissementsPanel() {
       }
       return { ...cur, [q.id]: q.leviers.map((l) => l.levier) };
     });
+  };
 
-  const cocher = (id: string, levier: string, actif: boolean) =>
+  const cocher = (id: string, levier: string, actif: boolean) => {
+    onUtilise();
     setImposes((cur) => ({
       ...cur,
       [id]: actif ? [...(cur[id] ?? []), levier] : (cur[id] ?? []).filter((l) => l !== levier),
     }));
+  };
 
   const demanderAvis = async () => {
     if (!data) return;
@@ -108,36 +114,49 @@ export default function InvestissementsPanel() {
   return (
     <div>
       <h2 className="text-base font-bold text-ink">
-        Arbitrage des investissements
+        Où investir un budget ?
         <HelpTip
           align="right"
           title="Arbitrage des investissements"
           text="Répartit un budget entre les quartiers pour améliorer au maximum leur Indice de Cadre de Vie (ICV). L'optimiseur propose un plan ; vous pouvez imposer vos propres choix quartier par quartier."
         />
       </h2>
-      <p className="mt-0.5 text-xs text-muted">Où investir pour améliorer le plus le cadre de vie, au meilleur coût.</p>
+      <p className="mt-1 text-sm leading-relaxed text-muted">
+        Choisissez une enveloppe : l&apos;outil répartit l&apos;argent entre les quartiers pour <strong className="text-ink">gagner le plus de points de note</strong>.
+        Vous pouvez aussi décider vous-même pour un quartier, l&apos;outil complète le reste.
+      </p>
 
       <div className="mt-3 space-y-3 rounded-2xl bg-slate-50 p-3">
-        <label className="block text-xs font-medium text-ink">
-          Budget : <strong className="text-sm">{budget.toLocaleString("fr-FR")} M FCFA</strong>
-          <HelpTip title="Budget" text="Enveloppe totale en millions de FCFA que le plan ne peut pas dépasser." />
-          <input type="range" min={0} max={30000} step={250} value={budget}
-            onChange={(e) => setBudget(Number(e.target.value))} className="mt-1 w-full accent-brand-600" />
-        </label>
+        <div className="text-xs font-medium text-ink">
+          <div className="flex items-center justify-between">
+            <span>
+              <label htmlFor={idBudget}>Budget</label>
+              <HelpTip title="Budget" text="Enveloppe totale en millions de FCFA que le plan ne peut pas dépasser." />
+            </span>
+            <strong className="text-sm">{budget.toLocaleString("fr-FR")} M FCFA</strong>
+          </div>
+          <input id={idBudget} type="range" min={0} max={30000} step={250} value={budget}
+            onChange={(e) => { setBudget(Number(e.target.value)); onUtilise(); }} className="mt-1 w-full accent-brand-600" />
+        </div>
 
-        <label className="block text-xs font-medium text-ink">
-          Équité : <strong className="text-sm">{equite.toFixed(1)}</strong>
-          <HelpTip
-            title="Équité"
-            text="0 = on cherche le plus grand gain total pour la population (efficacité pure, favorise les quartiers très peuplés). 1 = les quartiers au plus faible ICV comptent jusqu'à 2,3 fois plus. C'est le curseur politique entre efficacité et équité."
-          />
-          <input type="range" min={0} max={1} step={0.1} value={equite}
-            onChange={(e) => setEquite(Number(e.target.value))} className="mt-1 w-full accent-brand-600" />
-          <span className="flex justify-between text-[11px] font-normal text-muted"><span>Efficacité</span><span>Équité</span></span>
-        </label>
+        <div className="text-xs font-medium text-ink">
+          <div className="flex items-center justify-between">
+            <span>
+              <label htmlFor={idEquite}>Équité</label>
+              <HelpTip
+                title="Équité"
+                text="0 = on cherche le plus grand gain total pour la population (efficacité pure, favorise les quartiers très peuplés). 1 = les quartiers au plus faible ICV comptent jusqu'à 2,3 fois plus. C'est le curseur politique entre efficacité et équité."
+              />
+            </span>
+            <strong className="text-sm">{equite.toFixed(1)}</strong>
+          </div>
+          <input id={idEquite} type="range" min={0} max={1} step={0.1} value={equite}
+            onChange={(e) => { setEquite(Number(e.target.value)); onUtilise(); }} className="mt-1 w-full accent-brand-600" />
+          <span className="flex justify-between text-[11px] font-normal text-muted"><span>Plus de gain total</span><span>Plus d&apos;aide aux quartiers en difficulté</span></span>
+        </div>
 
         <label className="flex items-center gap-2 text-xs font-medium text-ink">
-          <input type="checkbox" checked={completerAuto} onChange={(e) => setCompleterAuto(e.target.checked)}
+          <input type="checkbox" checked={completerAuto} onChange={(e) => { const v = e.target.checked; setCompleterAuto(v); onUtilise(); }}
             className="h-4 w-4 accent-brand-600" />
           <span>Compléter automatiquement les quartiers que je n&apos;ai pas décidés</span>
           <HelpTip
@@ -158,7 +177,7 @@ export default function InvestissementsPanel() {
                 Mode : <strong className="rounded-full bg-brand-50 px-2 py-0.5 text-brand-700">{data.mode}</strong>
                 <HelpTip title="Mode" text="Automatique : tout est décidé par l'optimiseur. Mixte : vous avez imposé certains quartiers et l'optimiseur complète. Manuel : seul votre choix est financé." />
               </span>
-              <button onClick={() => { setImposes({}); setCompleterAuto(true); setAvis(null); }} className="btn btn-ghost btn-sm">
+              <button onClick={() => { setImposes({}); setCompleterAuto(true); setAvis(null); onUtilise(); }} className="btn btn-ghost btn-sm">
                 <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
                 Tout remettre en automatique
               </button>
@@ -167,6 +186,11 @@ export default function InvestissementsPanel() {
             <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-200" aria-hidden="true">
               <div className={`h-full rounded-full transition-all ${data.depasse_budget ? "bg-red-600" : "bg-brand-600"}`} style={{ width: `${taux}%` }} />
             </div>
+            <p className="mt-3 text-sm leading-relaxed text-ink">
+              Avec <strong>{budget.toLocaleString("fr-FR")} M FCFA</strong>, la note moyenne des quartiers passe de{" "}
+              <strong>{data.icv_moyen_avant}</strong> à{" "}
+              <strong style={{ color: couleurIcvTexte(data.plan.icv_moyen_apres) }}>{data.plan.icv_moyen_apres}</strong>.
+            </p>
             <p className="mt-2">
               Coût : <strong className="text-sm text-ink">{mfcfa(data.plan.cout_total_fcfa)}</strong> sur {mfcfa(data.budget_fcfa)} — reste{" "}
               <strong className={data.reste_budget_fcfa < 0 ? "text-red-700" : "text-ink"}>{mfcfa(data.reste_budget_fcfa)}</strong>
@@ -197,12 +221,13 @@ export default function InvestissementsPanel() {
                   </p>
                 </div>
               )}
-              <div className="col-span-2 rounded-xl bg-slate-50 px-3 py-2">
-                <p>
+              <details className="col-span-2 rounded-xl bg-slate-50 px-3 py-2">
+                <summary className="cursor-pointer font-medium text-muted hover:text-ink">Comparer à une méthode simple</summary>
+                <p className="mt-1.5">
                   Face à une stratégie naïve : <strong className="text-ink">{data.amelioration_vs_naive_pct !== null ? `${data.amelioration_vs_naive_pct > 0 ? "+" : ""}${data.amelioration_vs_naive_pct}%` : "—"}</strong>
                   <HelpTip align="right" title="Stratégie naïve" text="Référence simple : financer les quartiers les plus défavorisés d'abord, levier par levier, jusqu'à épuisement du budget. Montre ce que l'optimisation apporte en plus du bon sens." />
                 </p>
-              </div>
+              </details>
             </div>
 
             {data.avertissements.map((a) => (

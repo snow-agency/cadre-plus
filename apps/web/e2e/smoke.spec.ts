@@ -33,17 +33,31 @@ test.describe("page d'accueil", () => {
   });
 });
 
+const CLE_ONBOARDING = "cadre-plus:onboarding:v1";
+
+async function ouvrirApp(page: Page) {
+  await page.goto("/app");
+  await expect(page.locator("canvas.maplibregl-canvas")).toBeVisible();
+  await page.waitForFunction(() => !!(window as any).__cadreMap);
+}
+
+const ongletAmenager = (page: Page) => page.getByRole("tab", { name: "Aménager" }).click();
+
 test.describe("application", () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto("/app");
-    await expect(page.getByText("P1 — Plateau sableux").first()).toBeVisible();
-    await expect(page.locator("canvas.maplibregl-canvas")).toBeVisible();
-    await page.waitForFunction(() => !!(window as any).__cadreMap);
+    // Visite déjà faite : l'accueil ne masque pas l'interface (il est testé plus bas)
+    await page.addInitScript(
+      ([cle]) => localStorage.setItem(cle, JSON.stringify({ masque: true, fait: { quartier: true, parcelle: true, budget: true } })),
+      [CLE_ONBOARDING],
+    );
+    await ouvrirApp(page);
+    await expect(page.locator("[data-quartier]")).toHaveCount(8);
   });
 
   test("affiche l'en-tête, la carte et les panneaux", async ({ page }) => {
     await expect(page.getByText("Données synthétiques").first()).toBeVisible();
-    await expect(page.getByRole("tab", { name: "Conception assistée" })).toHaveAttribute("aria-selected", "true");
+    await expect(page.getByRole("tab", { name: "Diagnostic" })).toHaveAttribute("aria-selected", "true");
+    await expect(page.getByRole("heading", { name: "Où le cadre de vie va-t-il le moins bien ?" })).toBeVisible();
     await shot(page, "01-application");
   });
 
@@ -112,6 +126,7 @@ test.describe("application", () => {
   });
 
   test("éditeur manuel : conforme au départ, non conforme si on recule trop vers la voie", async ({ page }) => {
+    await ongletAmenager(page);
     await parcelle(page, "parcelle-togba-01").getByRole("button", { name: "Modifier à la main" }).click();
     await expect(page.getByText("Mode manuel")).toBeVisible();
     await expect(page.getByText("Conforme aux contraintes")).toBeVisible();
@@ -137,6 +152,7 @@ test.describe("application", () => {
   });
 
   test("éditeur manuel : le glisser-déposer du marqueur met à jour l'évaluation", async ({ page }) => {
+    await ongletAmenager(page);
     await parcelle(page, "parcelle-togba-01").getByRole("button", { name: "Modifier à la main" }).click();
     await expect(page.getByText("Conforme aux contraintes")).toBeVisible();
     await page.waitForTimeout(1500); // fin du zoom animé
@@ -152,9 +168,9 @@ test.describe("application", () => {
   });
 
   test("investissements : décider soi-même un quartier passe en mode mixte", async ({ page }) => {
-    await page.getByRole("tab", { name: "Investissements" }).click();
+    await page.getByRole("tab", { name: "Budget" }).click();
     await expect(page.getByText(/Mode :/)).toContainText("automatique");
-    const ouedo = page.locator("li", { hasText: "Ouèdo" });
+    const ouedo = page.locator("#panel-budget li", { hasText: "Ouèdo" });
     await ouedo.getByRole("button", { name: "Décider moi-même" }).click();
     await expect(page.getByText(/Mode :/)).toContainText("mixte");
     await expect(ouedo.getByText("Vous")).toBeVisible();
@@ -167,10 +183,46 @@ test.describe("application", () => {
   });
 
   test("investissements : mode 100 % manuel ne finance que les choix imposés", async ({ page }) => {
-    await page.getByRole("tab", { name: "Investissements" }).click();
+    await page.getByRole("tab", { name: "Budget" }).click();
     await page.getByRole("checkbox", { name: /Compléter automatiquement/ }).uncheck();
     await expect(page.getByText(/Mode :/)).toContainText("manuel");
     await expect(page.getByText(/Coût : 0 M FCFA/)).toBeVisible();
+  });
+
+  test("les interrupteurs de couches cochent et décochent vraiment", async ({ page }) => {
+    await page.getByText("Afficher / masquer des couches").click();
+    const visibilite = (couche: string) =>
+      page.evaluate((c) => (window as any).__cadreMap.getLayoutProperty(c, "visibility"), couche);
+    const interrupteur = page.getByRole("switch", { name: "Afficher : Parcelles" });
+    await expect(interrupteur).toBeChecked();
+    await page.locator("label", { has: interrupteur }).click(); // la piste visible, comme le ferait un utilisateur
+    await expect(interrupteur).not.toBeChecked();
+    expect(await visibilite("parcelles-fill")).toBe("none");
+    await page.getByText("Parcelles", { exact: true }).click(); // un clic sur le libellé fonctionne aussi
+    await expect(interrupteur).toBeChecked();
+    expect(await visibilite("parcelles-fill")).toBe("visible");
+  });
+
+  test("l'info-bulle « ? » n'est pas rognée et ne bloque pas l'interface", async ({ page }) => {
+    await page.getByRole("button", { name: "Aide : Indice de Cadre de Vie (ICV)" }).click();
+    const bulle = page.getByRole("tooltip");
+    await expect(bulle).toBeVisible();
+    const b = (await bulle.boundingBox())!;
+    const vue = page.viewportSize()!;
+    expect(b.x).toBeGreaterThanOrEqual(0);
+    expect(b.y).toBeGreaterThanOrEqual(0);
+    expect(b.x + b.width).toBeLessThanOrEqual(vue.width);
+    expect(b.y + b.height).toBeLessThanOrEqual(vue.height);
+    await page.getByRole("tab", { name: "Budget" }).click(); // la bulle ne capte pas les clics
+    await expect(page.getByRole("tab", { name: "Budget" })).toHaveAttribute("aria-selected", "true");
+  });
+
+  test("le diagnostic classe les quartiers et propose la suite", async ({ page }) => {
+    const liste = page.locator("#panel-diagnostic");
+    await expect(liste.getByRole("button", { name: /Ouèdo/ })).toBeVisible();
+    await liste.getByRole("button", { name: /Ouèdo/ }).click();
+    await expect(page.getByRole("region", { name: "Détail du quartier Ouèdo" })).toBeVisible();
+    await shot(page, "07-diagnostic");
   });
 
   test("assistant : la réponse (simulée) s'affiche, et l'erreur aussi", async ({ page }) => {
@@ -188,5 +240,39 @@ test.describe("application", () => {
     );
     await page.getByRole("button", { name: "Demander", exact: true }).click();
     await expect(page.getByText("RODIUM_API_KEY manquante")).toBeVisible();
+  });
+});
+
+test.describe("première visite", () => {
+  test("l'accueil guide, puis la liste « Premiers pas » avance", async ({ page }) => {
+    await ouvrirApp(page);
+    const accueil = page.getByRole("dialog", { name: /Bienvenue sur Cadre\+/ });
+    await expect(accueil).toBeVisible();
+    await shot(page, "08-accueil-guide");
+    await accueil.getByRole("button", { name: /Commencer/ }).click();
+    await expect(accueil).toHaveCount(0);
+
+    const premiersPas = page.getByRole("region", { name: "Premiers pas" });
+    await expect(premiersPas).toContainText("1/3");
+    await expect(page.getByRole("region", { name: /Détail du quartier/ })).toBeVisible();
+    await shot(page, "09-premiers-pas");
+
+    await premiersPas.getByRole("button", { name: /Ouvrir le budget/ }).click();
+    await expect(page.getByRole("tab", { name: "Budget" })).toHaveAttribute("aria-selected", "true");
+    await page.locator("#panel-budget").getByLabel(/Budget/).first().focus();
+    await page.getByRole("button", { name: "Masquer les premiers pas" }).click();
+    await expect(premiersPas).toHaveCount(0);
+  });
+
+  test("« Explorer librement » ferme l'accueil et il ne revient pas, « Visite guidée » le rouvre", async ({ page }) => {
+    await ouvrirApp(page);
+    const accueil = page.getByRole("dialog", { name: /Bienvenue sur Cadre\+/ });
+    await accueil.getByRole("button", { name: "Explorer librement" }).click();
+    await expect(accueil).toHaveCount(0);
+    await page.reload();
+    await page.waitForFunction(() => !!(window as any).__cadreMap);
+    await expect(accueil).toHaveCount(0);
+    await page.getByRole("button", { name: "Visite guidée" }).click();
+    await expect(accueil).toBeVisible();
   });
 });

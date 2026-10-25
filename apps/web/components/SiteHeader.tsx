@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ArrowRight, FlaskConical } from "lucide-react";
+import { ArrowRight, Compass, FlaskConical } from "lucide-react";
 import Logo from "./Logo";
 
 const LIENS = [
@@ -50,6 +50,15 @@ export default function SiteHeader({ compact = false }: { compact?: boolean }) {
           <FlaskConical className="h-3.5 w-3.5" aria-hidden="true" />
           Données synthétiques
         </span>
+        {pathname === "/app" && (
+          <button
+            onClick={() => window.dispatchEvent(new Event("cadre:visite"))}
+            className="btn btn-ghost btn-sm sm:px-4 sm:py-2 sm:text-sm"
+          >
+            <Compass className="h-4 w-4" aria-hidden="true" />
+            Visite guidée
+          </button>
+        )}
         {pathname !== "/app" && (
           <Link href="/app" className="btn btn-primary btn-sm sm:px-4 sm:py-2 sm:text-sm">
             Ouvrir la démo <ArrowRight className="h-4 w-4" aria-hidden="true" />

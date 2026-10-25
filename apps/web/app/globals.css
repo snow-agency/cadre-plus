@@ -179,6 +179,18 @@ body {
   }
 }
 
+/* Zones qui défilent : barre masquée, léger fondu en bas pour signaler qu'il y a une suite */
+@utility no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+@utility fade-bottom {
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 1.25rem), transparent);
+}
+
 /* Habillage des contrôles et fenêtres de MapLibre */
 .maplibregl-ctrl-group {
   border-radius: 14px !important;
