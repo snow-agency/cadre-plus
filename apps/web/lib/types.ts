@@ -18,6 +18,10 @@ export type Resume = {
   emprise_m2?: number;
   ces_pct?: number;
   dimensions_m?: string;
+  orientation?: string;
+  voie_cote?: string;
+  distance_voie_m?: number;
+  point_collecte?: boolean;
   fondation?: string;
   cout_total_estime_fcfa?: number;
   bassin_volume_m3?: number;

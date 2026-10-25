@@ -29,6 +29,7 @@ RETRAIT_LATERAL_M = 3.0
 RETRAIT_VOIE_M = 5.0
 TAMPON_ZONE_NATURELLE_M = 10.0
 DECALAGE_POINT_COLLECTE_M = 1.5
+LARGEUR_VOIE_M = 6.0
 PROFONDEUR_BASSIN_M = 0.5
 RATIO_FORME = 1.5
 PAS_GRILLE_M = 1.0
@@ -142,6 +143,20 @@ def _point_collecte(parcelle, voie: LineString, cote_voie: str, batiment, tampon
     return None
 
 
+def _etiquette(type_: str, extra: dict) -> str | None:
+    """Texte affiché sur la carte à côté de l'élément (None : pas d'étiquette)."""
+    if type_ == "batiment":
+        return f"Bâtiment proposé · {extra['longueur_m']:g} × {extra['largeur_m']:g} m"
+    if type_ == "zone_tampon":
+        return "Zone naturelle protégée" if extra.get("role") == "tampon zone naturelle" else "Tampon écologique"
+    return {
+        "point_collecte": "Collecte des déchets",
+        "voie_acces": "Voie d'accès",
+        "bassin_retention": "Bassin de rétention",
+        "emprise_existante": "Bâti existant conservé",
+    }.get(type_)
+
+
 def _amenager_parcelle(feature: dict, vers_metres, vers_lonlat) -> tuple[list, dict]:
     props = feature["properties"]
     parcelle = vers_metres(shape(feature["geometry"]))
@@ -159,7 +174,9 @@ def _amenager_parcelle(feature: dict, vers_metres, vers_lonlat) -> tuple[list, d
         "parcelle_id": pid, "nom": props["nom"], "surface_m2": props["surface_m2"],
         "indice_constructibilite": indice, "contraintes_appliquees": [],
         "centre": [round(centre.x, 6), round(centre.y, 6)],
+        "voie_cote": props["voie_acces_cote"],
     }
+    elements.append(("voie_acces", voie.buffer(LARGEUR_VOIE_M, cap_style=2).difference(parcelle), {}))
 
     if indice < SEUIL_CONSTRUCTIBLE:
         bassin = parcelle.buffer(-6, join_style=2)
@@ -239,9 +256,15 @@ def _amenager_parcelle(feature: dict, vers_metres, vers_lonlat) -> tuple[list, d
 
     features = []
     for type_, geom, extra in elements:
+        proprietes = {"parcelle_id": pid, "type": type_, **extra}
+        etiquette = _etiquette(type_, extra)
+        if etiquette:
+            ancre = vers_lonlat(geom if geom.geom_type == "Point" else geom.representative_point())
+            proprietes["etiquette"] = etiquette
+            proprietes["etiquette_lonlat"] = [round(ancre.x, 7), round(ancre.y, 7)]
         features.append({
             "type": "Feature",
-            "properties": {"parcelle_id": pid, "type": type_, **extra},
+            "properties": proprietes,
             "geometry": mapping(vers_lonlat(geom)),
         })
     return features, resume

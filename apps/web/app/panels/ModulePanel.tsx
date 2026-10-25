@@ -22,6 +22,7 @@ export default function ModulePanel({
   onSelectQuartier,
   zoomParcelle,
   onParcelleVue,
+  onVueReelle,
   onBudgetUtilise,
 }: {
   map: maplibregl.Map | null;
@@ -32,6 +33,7 @@ export default function ModulePanel({
   onSelectQuartier: (id: string) => void;
   zoomParcelle: number;
   onParcelleVue: () => void;
+  onVueReelle: () => void;
   onBudgetUtilise: () => void;
 }) {
   return (
@@ -59,7 +61,7 @@ export default function ModulePanel({
           <DiagnosticPanel quartiers={quartiers} selection={selection} onSelect={onSelectQuartier} onAller={onOnglet} />
         </div>
         <div role="tabpanel" id="panel-amenagement" aria-labelledby="tab-amenagement" hidden={onglet !== "amenagement"}>
-          <AmenagementPanel map={map} zoomPremiere={zoomParcelle} onParcelleVue={onParcelleVue} />
+          <AmenagementPanel map={map} actif={onglet === "amenagement"} zoomPremiere={zoomParcelle} onParcelleVue={onParcelleVue} onVueReelle={onVueReelle} />
         </div>
         <div role="tabpanel" id="panel-budget" aria-labelledby="tab-budget" hidden={onglet !== "budget"}>
           <InvestissementsPanel onUtilise={onBudgetUtilise} />

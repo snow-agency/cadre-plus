@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import * as maplibregl from "maplibre-gl";
 import { Crosshair, Hand } from "lucide-react";
+import EtiquettesAmenagement from "../../components/EtiquettesAmenagement";
 import HelpTip from "../../components/HelpTip";
 import { getJson } from "../../lib/api";
 import { fcfa } from "../../lib/format";
@@ -25,14 +26,39 @@ function verdict(indice: number): { label: string; classes: string } {
   return { label: "Construction déconseillée", classes: "bg-red-50 text-red-800 ring-red-200" };
 }
 
+const LEGENDE: { couleur: string; forme: string; label: string }[] = [
+  { couleur: "bg-[#2563eb]", forme: "rounded-sm", label: "Bâtiment proposé" },
+  { couleur: "bg-[#f59e0b]", forme: "rounded-full", label: "Collecte des déchets" },
+  { couleur: "bg-[#475569]", forme: "rounded-sm", label: "Voie d'accès (la route)" },
+  { couleur: "bg-[#15803d]", forme: "rounded-sm", label: "Zone naturelle protégée" },
+  { couleur: "bg-[#38bdf8]", forme: "rounded-sm", label: "Bassin de rétention" },
+  { couleur: "bg-[#94a3b8]", forme: "rounded-sm", label: "Bâti existant" },
+];
+
+const ETAPES = [
+  ["Choisissez une parcelle", "puis cliquez sur « Voir sur la carte » : la carte s'approche en vue satellite."],
+  ["Lisez la proposition", "l'outil a posé le bâtiment et le point de collecte des déchets en respectant les distances de sécurité."],
+  ["Corrigez si besoin", "« Modifier à la main » : glissez les pastilles B et D, changez la taille. Chaque règle est revérifiée en direct."],
+];
+
+function phraseProposition(r: Resume): string {
+  const voie = r.voie_cote ? `côté ${r.voie_cote}, ` : "";
+  const collecte = r.point_collecte ? ", avec un point de collecte des déchets le long de la route" : "";
+  return `Un bâtiment de ${r.dimensions_m} m, ${voie}à ${r.distance_voie_m} m de la limite sur la route${collecte}.`;
+}
+
 export default function AmenagementPanel({
   map,
+  actif,
   zoomPremiere,
   onParcelleVue,
+  onVueReelle,
 }: {
   map: maplibregl.Map | null;
+  actif: boolean;
   zoomPremiere: number;
   onParcelleVue: () => void;
+  onVueReelle: () => void;
 }) {
   const [resumes, setResumes] = useState<Resume[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -44,12 +70,15 @@ export default function AmenagementPanel({
       .catch((e) => setError(e.message));
   }, []);
 
-  const zoom = (r: Resume) => map?.flyTo({ center: r.centre, zoom: 18, duration: 1200 });
+  const zoom = (r: Resume) => {
+    onVueReelle();
+    map?.flyTo({ center: r.centre, zoom: 18, pitch: 40, bearing: 0, duration: 1200 });
+  };
 
   // « Premiers pas » : demande de zoom sur la première parcelle
   useEffect(() => {
     if (zoomPremiere > 0 && resumes[0]) {
-      map?.flyTo({ center: resumes[0].centre, zoom: 18, duration: 1200 });
+      zoom(resumes[0]);
       onParcelleVue();
     }
     // uniquement quand la demande change
@@ -67,15 +96,35 @@ export default function AmenagementPanel({
         />
       </h2>
       <p className="mt-1 text-sm leading-relaxed text-muted">
-        Pour chaque parcelle, l&apos;outil propose où placer un bâtiment et le point de collecte des déchets, en respectant les distances de
-        sécurité. <strong className="text-ink">Vous pouvez accepter la proposition ou la corriger à la main</strong> : il revérifie tout.
+        Où placer un bâtiment et ses déchets sans enfreindre les règles ? L&apos;outil propose, <strong className="text-ink">vous décidez</strong>.
       </p>
+
+      <ol className="mt-3 space-y-2" aria-label="Comment ça marche">
+        {ETAPES.map(([titre, texte], n) => (
+          <li key={titre} className="flex gap-2.5 text-sm leading-snug">
+            <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand-600 text-[11px] font-bold text-white">{n + 1}</span>
+            <span className="text-muted"><strong className="text-ink">{titre}</strong> : {texte}</span>
+          </li>
+        ))}
+      </ol>
+
+      <details className="mt-3 rounded-xl bg-slate-50 px-3 py-2.5">
+        <summary className="label-caps cursor-pointer">Lire la carte (légende)</summary>
+        <ul className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1.5 text-xs text-body">
+          {LEGENDE.map((l) => (
+            <li key={l.label} className="flex items-center gap-1.5">
+              <i className={`h-2.5 w-2.5 shrink-0 ${l.couleur} ${l.forme}`} /> {l.label}
+            </li>
+          ))}
+        </ul>
+      </details>
+
       {error && <p role="alert" className="mt-2 text-sm text-red-700">{error}</p>}
 
       <div className="mt-3 space-y-3">
         {resumes.map((r) => (
           <article key={r.parcelle_id} data-testid={`parcelle-${r.parcelle_id}`} className="rounded-2xl border border-line bg-white p-3.5">
-            <div className="flex items-start justify-between gap-2">
+            <div className="flex flex-col gap-2.5">
               <div>
                 <h3 className="font-semibold leading-tight text-ink">{r.nom}</h3>
                 <p className="mt-1.5 flex flex-wrap items-center gap-1.5 text-xs text-muted">
@@ -86,10 +135,10 @@ export default function AmenagementPanel({
                   <span>aptitude {r.indice_constructibilite} / 100</span>
                 </p>
               </div>
-              <div className="flex shrink-0 gap-1.5">
+              <div className="flex flex-wrap gap-1.5">
                 <button onClick={() => { zoom(r); onParcelleVue(); }} className="btn btn-ghost btn-sm">
                   <Crosshair className="h-3.5 w-3.5" aria-hidden="true" />
-                  Zoom
+                  Voir sur la carte
                 </button>
                 {manuelId !== r.parcelle_id && (
                   <button onClick={() => { setManuelId(r.parcelle_id); onParcelleVue(); }} className="btn btn-good btn-sm">
@@ -101,7 +150,11 @@ export default function AmenagementPanel({
             </div>
 
             {r.statut === "constructible" ? (
-              <div className="mt-3 grid grid-cols-2 gap-2">
+              <>
+              <p className="mt-3 text-sm leading-relaxed text-body">
+                <strong className="text-ink">Proposition :</strong> {phraseProposition(r)}
+              </p>
+              <div className="mt-2.5 grid grid-cols-2 gap-2">
                 <Tuile
                   label="Surface bâtie"
                   valeur={<>{r.emprise_m2} m² <span className="font-normal text-muted">({r.ces_pct} %)</span></>}
@@ -115,6 +168,7 @@ export default function AmenagementPanel({
                   aide={<HelpTip align="right" title="Coût estimé" text="Fondations (selon la portance du sol) + drainage périphérique si le risque d'inondation n'est pas faible. Barèmes inventés pour la démonstration, à remplacer par des prix réels." />}
                 />
               </div>
+              </>
             ) : (
               <p className="mt-3 rounded-xl bg-sky-50 px-3 py-2 text-sm text-sky-900">
                 Non constructible — la proposition automatique est un bassin de rétention de <strong>{r.bassin_volume_m3} m³</strong>
@@ -130,6 +184,7 @@ export default function AmenagementPanel({
           </article>
         ))}
       </div>
+      <EtiquettesAmenagement map={map} actif={actif} masquerParcelle={manuelId} />
       <p className="mt-3 text-xs italic text-muted">Coûts indicatifs sur hypothèses inventées (données synthétiques).</p>
     </div>
   );

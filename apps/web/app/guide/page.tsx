@@ -130,6 +130,7 @@ export default function Guide() {
             rows={[
               ["En-tête (haut)", "Navigation (Accueil, Application, Mode d'emploi) et pastille « Données synthétiques » : rappel permanent que les données sont inventées."],
               ["Carte (centre)", "Zones de quartier colorées selon leur ICV, avec une pastille « nom + note ». Molette pour zoomer, glisser pour déplacer. Cliquez sur un quartier pour ouvrir sa fiche ; les pastilles se masquent quand vous zoomez sur un quartier."],
+              ["Bouton « Plan / Satellite » (haut de la carte)", "Change le fond de carte : le plan clair, ou l'image satellite pour voir le terrain réel (végétation, routes, maisons). Il passe en satellite tout seul quand vous cliquez sur « Voir sur la carte »."],
               ["Cadre en haut à gauche", "Légende : l'échelle de couleurs de la note (0 = dégradé, 100 = bon). Le menu « Afficher / masquer des couches » contient les interrupteurs, la légende de l'aménagement se déplie aussi. La fiche du quartier choisi s'affiche juste dessous."],
               ["Panneau de droite", "Trois onglets, dans l'ordre : « Diagnostic » (où le cadre de vie va-t-il le moins bien ?), « Aménager » (où construire sur une parcelle ?) et « Budget » (où investir ?)."],
               ["Liste « Premiers pas » (bas)", "Trois étapes cliquables pour découvrir l'outil ; masquable, et réaffichée par « Visite guidée »."],
@@ -212,17 +213,21 @@ export default function Guide() {
           <Note tone="warn">Ces prix sont des hypothèses inventées pour la démonstration. Ils doivent être remplacés par des barèmes réels avant tout usage décisionnel.</Note>
           <H3>Utiliser l&apos;écran</H3>
           <p>
-            Onglet « Aménager » : chaque parcelle a une fiche avec la proposition automatique. Le bouton{" "}
-            <strong>Zoom</strong> centre la carte dessus. Aux niveaux de zoom élevés (15 et plus), la carte montre le bâtiment
-            (bleu), le point de collecte (orange), les zones tampons (vert foncé), le bassin de rétention (bleu clair) et le
-            bâti existant (gris).
+            Onglet « Aménager » : chaque parcelle a une fiche avec la proposition en une phrase (par exemple « Un bâtiment de
+            43,8 × 29,2 m, côté nord, à 5 m de la limite sur la route… »). Le bouton{" "}
+            <strong>Voir sur la carte</strong> approche la carte en vue satellite et légèrement inclinée. Vous y voyez, avec une
+            étiquette chacun : le bâtiment proposé (bleu, en volume), le point de collecte des déchets (orange), la voie d&apos;accès
+            (la route, en gris foncé), les zones naturelles protégées (vert foncé), le bassin de rétention (bleu clair), le bâti
+            existant (gris), et le contour pointillé vert de la zone où il est permis de construire. La légende complète se déplie
+            sous le texte d&apos;introduction (« Lire la carte »).
           </p>
         </Section>
 
         <Section id="manuel" title="5. Modifier l'aménagement à la main">
           <p>
             Vous n&apos;êtes pas obligé de suivre l&apos;optimiseur. Cliquez sur <strong>« Modifier à la main »</strong> sur
-            une fiche de parcelle : l&apos;éditeur démarre à partir de la proposition automatique.
+            une fiche de parcelle : l&apos;éditeur démarre à partir de la proposition automatique, la carte repasse en vue de
+            dessus (plus précise pour dessiner) et un mini mode d&apos;emploi en trois points s&apos;affiche en tête de l&apos;éditeur.
           </p>
           <ul className="list-disc space-y-1 pl-6">
             <li><strong>Déplacer le bâtiment</strong> : glissez le marqueur vert <strong>B</strong> sur la carte, ou utilisez les flèches (déplacement de 1 m).</li>

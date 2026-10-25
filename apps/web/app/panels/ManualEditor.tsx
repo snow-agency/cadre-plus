@@ -38,11 +38,17 @@ export default function ManualEditor({
   const [avis, setAvis] = useState<string | null>(null);
   const [avisLoading, setAvisLoading] = useState(false);
   const idRotation = useId();
+  const racine = useRef<HTMLDivElement>(null);
   const batMarker = useRef<maplibregl.Marker | null>(null);
   const pointMarker = useRef<maplibregl.Marker | null>(null);
 
   useEffect(() => {
-    map?.flyTo({ center: resume.centre, zoom: 18, duration: 1200 });
+    racine.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, []);
+
+  useEffect(() => {
+    // on édite sur plan (vue de dessus) : plus précis que la vue inclinée
+    map?.flyTo({ center: resume.centre, zoom: 18, pitch: 0, bearing: 0, duration: 1200 });
   }, [map, resume.centre]);
 
   useEffect(() => {
@@ -160,7 +166,7 @@ export default function ManualEditor({
   ];
 
   return (
-    <div className="mt-3 space-y-3 rounded-2xl border border-emerald-200 bg-emerald-50/60 p-3 text-xs">
+    <div ref={racine} className="mt-3 scroll-mt-2 space-y-3 rounded-2xl border border-emerald-200 bg-emerald-50/60 p-3 text-xs">
       <div className="flex items-center justify-between gap-2">
         <strong className="text-sm text-emerald-900">
           Mode manuel
@@ -174,6 +180,21 @@ export default function ManualEditor({
           Revenir à l&apos;optimum auto
         </button>
       </div>
+
+      <ol className="space-y-1.5 rounded-xl bg-white px-3 py-2.5 text-[13px] leading-snug text-body" aria-label="Comment modifier">
+        <li>
+          <strong className="text-ink">1.</strong> Sur la carte, glissez la pastille{" "}
+          <span className="inline-flex h-5 w-5 items-center justify-center rounded-md bg-emerald-600 text-[11px] font-bold text-white">B</span>{" "}
+          pour déplacer le bâtiment, et{" "}
+          <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-amber-500 text-[11px] font-bold text-white">D</span>{" "}
+          pour les déchets.
+        </li>
+        <li><strong className="text-ink">2.</strong> Réglez la taille et l&apos;angle ci-dessous (ou les flèches, au mètre près).</li>
+        <li>
+          <strong className="text-ink">3.</strong> Regardez le verdict : tracé <span className="font-semibold text-green-700">vert</span> = règles respectées,{" "}
+          <span className="font-semibold text-red-700">rouge</span> = une règle est violée (la liste dit laquelle).
+        </li>
+      </ol>
 
       <div className="grid grid-cols-2 gap-2">
         <label className="block font-medium text-ink">

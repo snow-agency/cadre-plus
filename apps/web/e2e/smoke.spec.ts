@@ -167,6 +167,37 @@ test.describe("application", () => {
     await expect(page.getByText(/Non conforme/)).toBeVisible();
   });
 
+  test("voir une parcelle : satellite, étiquettes lisibles, étapes et légende", async ({ page }) => {
+    await ongletAmenager(page);
+    await expect(page.getByRole("list", { name: "Comment ça marche" })).toBeVisible();
+    await page.getByText("Lire la carte (légende)").click();
+    await expect(page.getByText("Voie d'accès (la route)")).toBeVisible();
+    await expect(parcelle(page, "parcelle-togba-01")).toContainText("Proposition :");
+
+    await parcelle(page, "parcelle-togba-01").getByRole("button", { name: "Voir sur la carte" }).click();
+    await expect(page.getByRole("button", { name: "Satellite" })).toHaveAttribute("aria-pressed", "true");
+    await page.waitForFunction(() => (window as any).__cadreMap.getZoom() > 17.5);
+    const etiquette = (type: string) => page.locator(`[data-etiquette="${type}"]`).first();
+    await expect(etiquette("batiment")).toContainText("Bâtiment proposé");
+    await expect(etiquette("batiment")).toBeVisible();
+    await expect(etiquette("voie_acces")).toContainText("Voie d'accès");
+    await expect(etiquette("point_collecte")).toContainText("Collecte des déchets");
+    await page.waitForTimeout(1200);
+    await shot(page, "10-parcelle-satellite");
+
+    await parcelle(page, "parcelle-togba-01").getByRole("button", { name: "Modifier à la main" }).click();
+    await expect(page.getByRole("list", { name: "Comment modifier" })).toBeVisible();
+    await expect(etiquette("batiment")).toBeHidden();
+    await expect(etiquette("voie_acces")).toBeVisible();
+    await page.waitForFunction(() => (window as any).__cadreMap.getPitch() < 1);
+    await page.waitForTimeout(1200);
+    await shot(page, "11-edition");
+
+    await page.getByRole("button", { name: "Plan", exact: true }).click();
+    await expect(page.getByRole("button", { name: "Plan", exact: true })).toHaveAttribute("aria-pressed", "true");
+    expect(await page.evaluate(() => (window as any).__cadreMap.getLayoutProperty("satellite", "visibility"))).toBe("none");
+  });
+
   test("investissements : décider soi-même un quartier passe en mode mixte", async ({ page }) => {
     await page.getByRole("tab", { name: "Budget" }).click();
     await expect(page.getByText(/Mode :/)).toContainText("automatique");

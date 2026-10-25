@@ -36,6 +36,11 @@ national d'un coup.
   (3 étapes : quartier, parcelle, budget) ; avancement dans localStorage `cadre-plus:onboarding:v1`
   (`lib/onboarding.ts`) ; bouton « Visite guidée » de l'en-tête pour relancer. Panneau de droite = 3 onglets
   Diagnostic / Aménager / Budget (état `onglet` dans `CadreMap.tsx`). Langage simple, pas de jargon en premier plan.
+- **Lisibilité de l'aménagement** : la parcelle doit se comprendre sans explication. La carte montre la voie
+  d'accès (route), des étiquettes en français sur chaque élément (`components/EtiquettesAmenagement.tsx`, alimentées
+  par `etiquette` / `etiquette_lonlat` renvoyés par `placement.py`), le bâtiment en volume (`fill-extrusion`), un
+  bouton Plan / Satellite (imagerie Esri, source `satellite`), et le panneau Aménager donne 3 étapes + une phrase de
+  proposition + une légende. L'éditeur manuel repasse en vue de dessus (pitch 0) et affiche un mode d'emploi B/D.
 - **Pages** : `/` page d'accueil (produit), `/app` application cartographique, `/guide` mode d'emploi.
 - Ne jamais lire/afficher/committer `services/api/.env` (clé API).
 
@@ -64,7 +69,7 @@ national d'un coup.
   `npm run` qui lance l'exe Python du venv via cmd.exe s'arrête silencieusement.
   `predev` copie le worker de MapLibre dans `apps/web/public/maplibre/`.
 - `npm run dev:web` / `npm run dev:api` : un seul des deux.
-- Tests backend (40) : dans `services/api`, `.venv/Scripts/python.exe -m pytest -q`.
+- Tests backend (42) : dans `services/api`, `.venv/Scripts/python.exe -m pytest -q`.
 - Tests e2e (navigateur réel, Chromium via Playwright) : dans `apps/web`,
   `npx playwright test` (serveurs déjà lancés ou démarrés automatiquement ;
   `E2E_SHOTS_DIR=<dossier>` pour sauvegarder des captures).

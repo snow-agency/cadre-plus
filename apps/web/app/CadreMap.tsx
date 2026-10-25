@@ -23,8 +23,8 @@ const GROUPS = {
   icv: ["icv-fill", "icv-outline", "icv-selection"],
   parcelles: ["parcelles-fill", "parcelles-outline"],
   amenagement: [
-    "amenagement-constructible", "amenagement-tampon", "amenagement-bassin",
-    "amenagement-existant", "amenagement-batiment", "amenagement-collecte",
+    "amenagement-voie", "amenagement-constructible", "amenagement-constructible-contour", "amenagement-tampon",
+    "amenagement-bassin", "amenagement-existant", "amenagement-batiment", "amenagement-collecte",
   ],
 } as const;
 
@@ -66,6 +66,16 @@ function addLayers(map: maplibregl.Map) {
     12, ["case", ["boolean", ["feature-state", "hover"], false], 0.98, 0.92],
     15, ["case", ["boolean", ["feature-state", "hover"], false], 0.28, 0.16]] as unknown as maplibregl.ExpressionSpecification;
 
+  // Imagerie satellite, masquée par défaut (bouton « Plan / Satellite ») ; posée sous toutes les données
+  map.addSource("satellite", {
+    type: "raster",
+    tiles: ["https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"],
+    tileSize: 256,
+    maxzoom: 18,
+    attribution: "Imagerie © Esri, Maxar, Earthstar Geographics",
+  });
+  map.addLayer({ id: "satellite", type: "raster", source: "satellite", layout: { visibility: "none" } });
+
   map.addSource("icv", { type: "geojson", data: `${API_URL}/api/icv`, promoteId: "id" });
   map.addLayer({ id: "icv-fill", type: "fill", source: "icv",
     paint: { "fill-color": colorScale("icv"), "fill-opacity": survol } });
@@ -84,16 +94,24 @@ function addLayers(map: maplibregl.Map) {
   map.addSource("amenagement", { type: "geojson", data: `${API_URL}/api/conception-assistee/amenagement` });
   const type = (t: string): maplibregl.ExpressionSpecification => ["==", ["get", "type"], t];
   const zoomMin = 15;
+  map.addLayer({ id: "amenagement-voie", type: "fill", source: "amenagement",
+    filter: type("voie_acces"), minzoom: zoomMin, paint: { "fill-color": "#475569", "fill-opacity": 0.85 } });
   map.addLayer({ id: "amenagement-constructible", type: "fill", source: "amenagement",
-    filter: type("zone_constructible"), minzoom: zoomMin, paint: { "fill-color": "#22c55e", "fill-opacity": 0.14 } });
+    filter: type("zone_constructible"), minzoom: zoomMin, paint: { "fill-color": "#22c55e", "fill-opacity": 0.12 } });
+  map.addLayer({ id: "amenagement-constructible-contour", type: "line", source: "amenagement",
+    filter: type("zone_constructible"), minzoom: zoomMin,
+    paint: { "line-color": "#15803d", "line-width": 2, "line-dasharray": [3, 2] } });
   map.addLayer({ id: "amenagement-tampon", type: "fill", source: "amenagement",
     filter: type("zone_tampon"), minzoom: zoomMin, paint: { "fill-color": "#15803d", "fill-opacity": 0.32 } });
   map.addLayer({ id: "amenagement-bassin", type: "fill", source: "amenagement",
     filter: type("bassin_retention"), minzoom: zoomMin, paint: { "fill-color": "#38bdf8", "fill-opacity": 0.6 } });
-  map.addLayer({ id: "amenagement-existant", type: "fill", source: "amenagement",
-    filter: type("emprise_existante"), minzoom: zoomMin, paint: { "fill-color": "#94a3b8", "fill-opacity": 0.9 } });
-  map.addLayer({ id: "amenagement-batiment", type: "fill", source: "amenagement",
-    filter: type("batiment"), minzoom: zoomMin, paint: { "fill-color": "#2563eb", "fill-opacity": 0.88 } });
+  // Bâtiments en volume (hauteurs indicatives) : on les reconnaît d'un coup d'œil, surtout en vue inclinée
+  map.addLayer({ id: "amenagement-existant", type: "fill-extrusion", source: "amenagement",
+    filter: type("emprise_existante"), minzoom: zoomMin,
+    paint: { "fill-extrusion-color": "#94a3b8", "fill-extrusion-height": 5, "fill-extrusion-opacity": 0.95 } });
+  map.addLayer({ id: "amenagement-batiment", type: "fill-extrusion", source: "amenagement",
+    filter: type("batiment"), minzoom: zoomMin,
+    paint: { "fill-extrusion-color": "#2563eb", "fill-extrusion-height": 8, "fill-extrusion-opacity": 0.92 } });
   map.addLayer({ id: "amenagement-collecte", type: "circle", source: "amenagement",
     filter: type("point_collecte"), minzoom: zoomMin,
     paint: { "circle-radius": 8, "circle-color": "#f59e0b", "circle-stroke-color": "#ffffff", "circle-stroke-width": 2.5 } });
@@ -115,6 +133,7 @@ export default function CadreMap() {
   const [selection, setSelection] = useState<string | null>(null);
   const [onglet, setOnglet] = useState<Onglet>("diagnostic");
   const [zoomParcelle, setZoomParcelle] = useState(0);
+  const [satellite, setSatellite] = useState(false);
   const idCalques = useId();
   const { etat, accueilOuvert, fermerAccueil, marquer, masquer } = useOnboarding();
   const survolRef = useRef<string | null>(null);
@@ -131,7 +150,7 @@ export default function CadreMap() {
     setSelection(id);
     if (!id || !carte) return;
     const q = quartiersRef.current.find((x) => x.id === id);
-    if (q) carte.flyTo({ center: q.centre, zoom: Math.max(carte.getZoom(), 11.6), duration: 900 });
+    if (q) carte.flyTo({ center: q.centre, zoom: Math.max(carte.getZoom(), 11.6), pitch: 0, bearing: 0, duration: 900 });
   }, []);
 
   useEffect(() => {
@@ -219,6 +238,10 @@ export default function CadreMap() {
     }
   }, [map, visible]);
 
+  useEffect(() => {
+    map?.setLayoutProperty("satellite", "visibility", satellite ? "visible" : "none");
+  }, [map, satellite]);
+
   const selectionPrecedente = useRef<string | null>(null);
   useEffect(() => {
     if (!map) return;
@@ -250,6 +273,25 @@ export default function CadreMap() {
     <div className="relative h-full w-full overflow-hidden">
       <div className="absolute inset-0">
         <div ref={conteneur} className="h-full w-full" />
+      </div>
+
+      <div
+        role="group"
+        aria-label="Fond de carte"
+        className="glass absolute left-1/2 top-3 z-10 flex -translate-x-1/2 gap-0.5 rounded-full p-1"
+      >
+        {([["Plan", false], ["Satellite", true]] as const).map(([label, valeur]) => (
+          <button
+            key={label}
+            aria-pressed={satellite === valeur}
+            onClick={() => setSatellite(valeur)}
+            className={`rounded-full px-3.5 py-1.5 text-xs font-semibold transition ${
+              satellite === valeur ? "bg-ink text-white" : "text-muted hover:text-ink"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
       </div>
 
       <div className="pointer-events-none absolute left-3 top-3 z-10 flex max-h-[calc(100%-5.5rem)] w-72 flex-col gap-3 overflow-y-auto pb-6 no-scrollbar fade-bottom">
@@ -330,6 +372,7 @@ export default function CadreMap() {
         onSelectQuartier={(id) => choisir(id, map)}
         zoomParcelle={zoomParcelle}
         onParcelleVue={() => marquer("parcelle")}
+        onVueReelle={() => setSatellite(true)}
         onBudgetUtilise={() => marquer("budget")}
       />
       <PremiersPas fait={etat.fait} masque={etat.masque} onMasquer={() => masquer(true)} onAction={lancerEtape} />

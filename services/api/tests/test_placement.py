@@ -177,3 +177,23 @@ def test_manuel_parcelle_non_constructible_donne_avertissement_pas_erreur_bloqua
 def test_manuel_parcelle_inconnue():
     with pytest.raises(placement.ParcelleIntrouvable):
         placement.evaluer_amenagement_manuel("nope", None, None)
+
+
+def test_voie_d_acces_et_etiquettes(resultat):
+    for pid, elems in _par_parcelle(resultat).items():
+        voie = elems["voie_acces"][0]
+        assert voie["properties"]["etiquette"] == "Voie d'accès"
+        parcelle = _parcelles()[pid]["geometry"]
+        assert not _en_metres(voie["geometry"], parcelle).intersects(_en_metres(parcelle, parcelle).buffer(-0.01))
+        for type_, features in elems.items():
+            for f in features:
+                if "etiquette" in f["properties"]:
+                    lon, lat = f["properties"]["etiquette_lonlat"]
+                    assert 2.0 < lon < 3.0 and 6.0 < lat < 7.0
+
+
+def test_etiquette_du_batiment_donne_les_dimensions(resultat):
+    bat = _par_parcelle(resultat)["parcelle-togba-01"]["batiment"][0]["properties"]
+    assert bat["etiquette"].startswith("Bâtiment proposé")
+    assert "m" in bat["etiquette"]
+    assert all("voie_cote" in s for s in resultat["summaries"])
