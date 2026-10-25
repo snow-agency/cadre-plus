@@ -87,3 +87,13 @@ export type PlanResponse = {
   strategie_naive: PlanResume & { description: string };
   amelioration_vs_naive_pct: number | null;
 };
+
+export type Quartier = {
+  id: string;
+  nom_quartier: string;
+  icv: number;
+  population: number;
+  centre: LonLat;
+  indicateurs_bruts: Record<string, number>;
+  sous_scores_normalises_0_100: Record<string, number>;
+};

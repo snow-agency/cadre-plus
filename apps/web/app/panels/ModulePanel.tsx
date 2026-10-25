@@ -2,12 +2,13 @@
 
 import { useState } from "react";
 import * as maplibregl from "maplibre-gl";
+import { Coins, DraftingCompass } from "lucide-react";
 import AmenagementPanel from "./AmenagementPanel";
 import InvestissementsPanel from "./InvestissementsPanel";
 
 const TABS = [
-  { id: "amenagement", label: "Conception assistée" },
-  { id: "investissements", label: "Investissements" },
+  { id: "amenagement", label: "Conception assistée", Icone: DraftingCompass },
+  { id: "investissements", label: "Investissements", Icone: Coins },
 ] as const;
 
 type TabId = (typeof TABS)[number]["id"];
@@ -16,25 +17,26 @@ export default function ModulePanel({ map }: { map: maplibregl.Map | null }) {
   const [tab, setTab] = useState<TabId>("amenagement");
 
   return (
-    <div className="absolute right-2.5 top-28 z-10 flex max-h-[calc(100vh-8rem)] w-[26rem] max-w-[calc(100vw-1.5rem)] flex-col rounded-lg bg-white shadow-lg">
-      <div role="tablist" aria-label="Modules" className="flex border-b border-gray-200">
-        {TABS.map((t) => (
+    <div className="glass absolute right-3 top-3 z-10 flex max-h-[calc(100%-9.5rem)] w-[26rem] max-w-[calc(100vw-1.5rem)] flex-col overflow-hidden">
+      <div role="tablist" aria-label="Modules" className="m-3 mb-0 flex gap-1 rounded-full bg-slate-100 p-1">
+        {TABS.map(({ id, label, Icone }) => (
           <button
-            key={t.id}
+            key={id}
             role="tab"
-            id={`tab-${t.id}`}
-            aria-selected={tab === t.id}
-            aria-controls={`panel-${t.id}`}
-            onClick={() => setTab(t.id)}
-            className={`flex-1 px-3 py-2 text-sm font-medium ${
-              tab === t.id ? "border-b-2 border-slate-800 text-slate-900" : "text-gray-500 hover:text-gray-800"
+            id={`tab-${id}`}
+            aria-selected={tab === id}
+            aria-controls={`panel-${id}`}
+            onClick={() => setTab(id)}
+            className={`flex flex-1 items-center justify-center gap-1.5 rounded-full px-3 py-2 text-sm font-semibold transition ${
+              tab === id ? "bg-white text-ink shadow-sm" : "text-muted hover:text-ink"
             }`}
           >
-            {t.label}
+            <Icone className="h-4 w-4" aria-hidden="true" />
+            {label}
           </button>
         ))}
       </div>
-      <div className="overflow-auto p-3">
+      <div className="overflow-auto p-4">
         <div role="tabpanel" id="panel-amenagement" aria-labelledby="tab-amenagement" hidden={tab !== "amenagement"}>
           <AmenagementPanel map={map} />
         </div>

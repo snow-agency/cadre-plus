@@ -1,11 +1,29 @@
 {
   "version": 1,
   "skills": {
+    "bento": {
+      "source": "bergside/awesome-design-skills",
+      "sourceType": "github",
+      "skillPath": "skills/bento/SKILL.md",
+      "computedHash": "8d4bf97435f16280a65d0a02bef6fae48d3064fd3399897b35984842e16aece7"
+    },
+    "enterprise": {
+      "source": "bergside/awesome-design-skills",
+      "sourceType": "github",
+      "skillPath": "skills/enterprise/SKILL.md",
+      "computedHash": "e65c906bc06be4a789422acfee2b9cae38c0f78f982a8c13e9b12d9610314b2a"
+    },
     "security-audit": {
       "source": "cloudflare/security-audit-skill",
       "sourceType": "github",
       "skillPath": "skills/security-audit/SKILL.md",
       "computedHash": "e6b2e317de75da97e9de18d842982994803f3a67a4a6d8154a82323dc3de8528"
+    },
+    "sleek": {
+      "source": "bergside/awesome-design-skills",
+      "sourceType": "github",
+      "skillPath": "skills/sleek/SKILL.md",
+      "computedHash": "5eac1308ea2837ee9479817098da836177032080c20845f2203b0855e99366f3"
     }
   }
 }

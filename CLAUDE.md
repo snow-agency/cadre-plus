@@ -29,6 +29,10 @@ national d'un coup.
 - **Données synthétiques étiquetées** partout (bandeau rouge, popups, réponses
   IA) — ADR 0002. Jamais présentées comme officielles.
 - Tout est en français (interface, doc, messages d'erreur).
+- **Design system** : `docs/design-system.md` (mélange des styles Sleek + Bento + Enterprise du dépôt
+  awesome-design-skills, installés dans `.agents/skills/`). Jetons dans `apps/web/app/globals.css`, échelle
+  de l'ICV dans `apps/web/lib/couleurs.ts`. Violet = IA uniquement. Ne pas copier un site tiers.
+- **Pages** : `/` page d'accueil (produit), `/app` application cartographique, `/guide` mode d'emploi.
 - Ne jamais lire/afficher/committer `services/api/.env` (clé API).
 
 ## État des modules (à tenir à jour)
@@ -78,6 +82,14 @@ national d'un coup.
   (expose la prise de test `window.__cadreMap`), puis `next start`, puis `npx playwright test`.
 
 ## Pièges connus
+- **Marqueurs MapLibre** : ne jamais réaffecter `el.className` (efface la classe de positionnement de
+  MapLibre → pastille en `position: static`, décalée). Utiliser `classList`.
+- **Conteneur de carte** : MapLibre force `position: relative` ; donner au conteneur `h-full w-full` dans un
+  parent `absolute inset-0`, pas `absolute` directement.
+- Aperçu de la page d'accueil (`public/img/apercu-application.jpg`) : se régénère avec
+  `CAPTURE_APERCU=1 npx playwright test e2e/apercu.spec.ts` (dans `apps/web`) après un changement visuel.
+- Un test e2e (« fiche explicative ») a échoué une fois au tout premier lancement après démarrage du
+  serveur, jamais ensuite (30+ exécutions) : `retries: 1` est configuré.
 - **MapLibre v6 + Next/Turbopack** : le worker ne se charge pas tout seul
   (« Worker failed to load » → aucune couche GeoJSON). Solution en place :
   `scripts/copy-maplibre-assets.mjs` + `maplibregl.setWorkerUrl(...)` dans

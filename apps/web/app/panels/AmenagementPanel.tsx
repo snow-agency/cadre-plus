@@ -2,11 +2,22 @@
 
 import { useEffect, useState } from "react";
 import * as maplibregl from "maplibre-gl";
+import { Crosshair, Hand } from "lucide-react";
 import HelpTip from "../../components/HelpTip";
 import { getJson } from "../../lib/api";
 import { fcfa } from "../../lib/format";
+import { couleurIcv } from "../../lib/couleurs";
 import type { Resume } from "../../lib/types";
 import ManualEditor from "./ManualEditor";
+
+function Tuile({ label, valeur, aide }: { label: string; valeur: React.ReactNode; aide?: React.ReactNode }) {
+  return (
+    <div className="rounded-xl bg-slate-50 px-3 py-2">
+      <p className="label-caps flex items-center">{label}{aide}</p>
+      <p className="mt-0.5 text-sm font-semibold text-ink">{valeur}</p>
+    </div>
+  );
+}
 
 export default function AmenagementPanel({ map }: { map: maplibregl.Map | null }) {
   const [resumes, setResumes] = useState<Resume[]>([]);
@@ -22,64 +33,71 @@ export default function AmenagementPanel({ map }: { map: maplibregl.Map | null }
   const zoom = (r: Resume) => map?.flyTo({ center: r.centre, zoom: 18, duration: 1200 });
 
   return (
-    <div className="text-sm">
-      <div className="mb-1.5 font-semibold">
+    <div>
+      <h2 className="text-base font-bold text-ink">
         Conception assistée
         <HelpTip
           align="right"
           title="Conception assistée"
           text="Pour chaque parcelle, l'outil propose automatiquement où placer le bâtiment et le point de collecte des déchets, en respectant les retraits, les zones naturelles et le bâti existant. Vous pouvez accepter la proposition ou la modifier à la main."
         />
-      </div>
-      {error && <p className="text-red-700">{error}</p>}
-      {resumes.map((r) => (
-        <div key={r.parcelle_id} className="mb-2 rounded border border-gray-200 p-2">
-          <div className="flex items-center justify-between">
-            <strong>{r.nom}</strong>
-            <span className="space-x-1">
-              <button onClick={() => zoom(r)} className="rounded bg-slate-800 px-2 py-0.5 text-xs text-white">
-                Zoom
-              </button>
-              {manuelId !== r.parcelle_id && (
-                <button
-                  onClick={() => setManuelId(r.parcelle_id)}
-                  className="rounded bg-emerald-700 px-2 py-0.5 text-xs text-white"
-                >
-                  Modifier à la main
+      </h2>
+      <p className="mt-0.5 text-xs text-muted">Proposition automatique pour chaque parcelle, modifiable à la main.</p>
+      {error && <p role="alert" className="mt-2 text-sm text-red-700">{error}</p>}
+
+      <div className="mt-3 space-y-3">
+        {resumes.map((r) => (
+          <article key={r.parcelle_id} data-testid={`parcelle-${r.parcelle_id}`} className="rounded-2xl border border-line bg-white p-3.5">
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <h3 className="font-semibold leading-tight text-ink">{r.nom}</h3>
+                <p className="mt-1 flex items-center gap-2 text-xs text-muted">
+                  <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: couleurIcv(r.indice_constructibilite) }} />
+                  Constructibilité {r.indice_constructibilite} / 100
+                </p>
+              </div>
+              <div className="flex shrink-0 gap-1.5">
+                <button onClick={() => zoom(r)} className="btn btn-ghost btn-sm">
+                  <Crosshair className="h-3.5 w-3.5" aria-hidden="true" />
+                  Zoom
                 </button>
-              )}
-            </span>
-          </div>
+                {manuelId !== r.parcelle_id && (
+                  <button onClick={() => setManuelId(r.parcelle_id)} className="btn btn-good btn-sm">
+                    <Hand className="h-3.5 w-3.5" aria-hidden="true" />
+                    Modifier à la main
+                  </button>
+                )}
+              </div>
+            </div>
 
-          {r.statut === "constructible" ? (
-            <ul className="mt-1 text-xs leading-relaxed">
-              <li>
-                Proposition auto — emprise : {r.emprise_m2} m² ({r.ces_pct}% de {r.surface_m2} m²)
-                <HelpTip align="right" title="Emprise" text="Surface au sol du bâtiment. Le plafond (40 % de la parcelle si l'indice ≥ 75, sinon 25 %) évite de trop imperméabiliser le terrain." />
-              </li>
-              <li>Dimensions : {r.dimensions_m} m</li>
-              <li>Fondations : {r.fondation}</li>
-              <li>
-                Coût estimé : <strong>{fcfa(r.cout_total_estime_fcfa ?? 0)}</strong>
-                <HelpTip align="right" title="Coût estimé" text="Fondations (selon la portance du sol) + drainage périphérique si le risque d'inondation n'est pas faible. Barèmes inventés pour la démonstration, à remplacer par des prix réels." />
-              </li>
-            </ul>
-          ) : (
-            <p className="mt-1 text-xs">
-              Non constructible — la proposition auto est un bassin de rétention de {r.bassin_volume_m3} m³
-              <HelpTip align="right" title="Bassin de rétention" text="Quand le sol est trop faible ou trop inondable (indice < 40), l'outil propose de garder la parcelle comme réservoir d'eau de pluie plutôt que d'y construire." />
-            </p>
-          )}
-          <p className="mt-1 text-xs text-gray-600">{r.justification}</p>
+            {r.statut === "constructible" ? (
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <Tuile
+                  label="Emprise"
+                  valeur={<>{r.emprise_m2} m² <span className="font-normal text-muted">({r.ces_pct} %)</span></>}
+                  aide={<HelpTip align="right" title="Emprise" text="Surface au sol du bâtiment. Le plafond (40 % de la parcelle si l'indice ≥ 75, sinon 25 %) évite de trop imperméabiliser le terrain." />}
+                />
+                <Tuile label="Dimensions" valeur={<>{r.dimensions_m} m</>} />
+                <Tuile label="Fondations" valeur={<span className="text-xs">{r.fondation}</span>} />
+                <Tuile
+                  label="Coût estimé"
+                  valeur={fcfa(r.cout_total_estime_fcfa ?? 0)}
+                  aide={<HelpTip align="right" title="Coût estimé" text="Fondations (selon la portance du sol) + drainage périphérique si le risque d'inondation n'est pas faible. Barèmes inventés pour la démonstration, à remplacer par des prix réels." />}
+                />
+              </div>
+            ) : (
+              <p className="mt-3 rounded-xl bg-sky-50 px-3 py-2 text-sm text-sky-900">
+                Non constructible — la proposition automatique est un bassin de rétention de <strong>{r.bassin_volume_m3} m³</strong>
+                <HelpTip align="right" title="Bassin de rétention" text="Quand le sol est trop faible ou trop inondable (indice < 40), l'outil propose de garder la parcelle comme réservoir d'eau de pluie plutôt que d'y construire." />
+              </p>
+            )}
+            <p className="mt-2.5 text-xs leading-relaxed text-muted">{r.justification}</p>
 
-          {manuelId === r.parcelle_id && (
-            <ManualEditor resume={r} map={map} onExit={() => setManuelId(null)} />
-          )}
-        </div>
-      ))}
-      <p className="text-xs italic text-gray-500">
-        Coûts indicatifs sur hypothèses inventées (données synthétiques).
-      </p>
+            {manuelId === r.parcelle_id && <ManualEditor resume={r} map={map} onExit={() => setManuelId(null)} />}
+          </article>
+        ))}
+      </div>
+      <p className="mt-3 text-xs italic text-muted">Coûts indicatifs sur hypothèses inventées (données synthétiques).</p>
     </div>
   );
 }

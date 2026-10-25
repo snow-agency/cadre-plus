@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import * as maplibregl from "maplibre-gl";
+import { AlertTriangle, ArrowDown, ArrowLeft, ArrowRight, ArrowUp, CheckCircle2, Sparkles, XCircle } from "lucide-react";
 import HelpTip from "../../components/HelpTip";
 import { isAbort, postJson } from "../../lib/api";
 import { fcfa, signed } from "../../lib/format";
@@ -10,11 +11,12 @@ import type { BatimentParam, Evaluation, LonLat, Resume } from "../../lib/types"
 const M_PER_DEG_LAT = 110_574;
 const mPerDegLon = (lat: number) => 111_320 * Math.cos((lat * Math.PI) / 180);
 
-function createMarker(map: maplibregl.Map, lngLat: LonLat, label: string, title: string, classes: string) {
+function createMarker(map: maplibregl.Map, lngLat: LonLat, label: string, title: string, type: string, classes: string) {
   const el = document.createElement("div");
-  el.className = `flex cursor-grab items-center justify-center border-2 border-white text-xs font-bold text-white shadow-lg ${classes}`;
+  el.className = `flex cursor-grab items-center justify-center border-2 border-white text-xs font-bold text-white shadow-pop ${classes}`;
   el.textContent = label;
   el.title = title;
+  el.dataset.editorMarker = type;
   return new maplibregl.Marker({ element: el, draggable: true }).setLngLat(lngLat).addTo(map);
 }
 
@@ -44,8 +46,7 @@ export default function ManualEditor({
 
   useEffect(() => {
     if (!map) return;
-    const marker = createMarker(map, bat.centre, "B", "Glisser pour déplacer le bâtiment",
-      "h-7 w-7 rounded bg-emerald-600");
+    const marker = createMarker(map, bat.centre, "B", "Glisser pour déplacer le bâtiment", "batiment", "h-8 w-8 rounded-lg bg-emerald-600");
     marker.on("drag", () => {
       const { lng, lat } = marker.getLngLat();
       setBat((b) => ({ ...b, centre: [lng, lat] }));
@@ -61,8 +62,7 @@ export default function ManualEditor({
 
   useEffect(() => {
     if (!map || !point) return;
-    const marker = createMarker(map, point, "D", "Glisser pour déplacer le point de collecte des déchets",
-      "h-6 w-6 rounded-full bg-amber-500");
+    const marker = createMarker(map, point, "D", "Glisser pour déplacer le point de collecte des déchets", "collecte", "h-7 w-7 rounded-full bg-amber-500");
     marker.on("drag", () => {
       const { lng, lat } = marker.getLngLat();
       setPoint([lng, lat]);
@@ -151,11 +151,17 @@ export default function ManualEditor({
 
   const erreurs = evaluation?.violations.filter((v) => v.severite === "erreur").length ?? 0;
   const cmp = evaluation?.comparaison_optimum;
+  const fleches = [
+    { Icone: ArrowLeft, label: "←", dx: -1, dy: 0 },
+    { Icone: ArrowUp, label: "↑", dx: 0, dy: 1 },
+    { Icone: ArrowDown, label: "↓", dx: 0, dy: -1 },
+    { Icone: ArrowRight, label: "→", dx: 1, dy: 0 },
+  ];
 
   return (
-    <div className="mt-2 space-y-2 rounded border border-emerald-300 bg-emerald-50 p-2 text-xs">
-      <div className="flex items-center justify-between">
-        <strong>
+    <div className="mt-3 space-y-3 rounded-2xl border border-emerald-200 bg-emerald-50/60 p-3 text-xs">
+      <div className="flex items-center justify-between gap-2">
+        <strong className="text-sm text-emerald-900">
           Mode manuel
           <HelpTip
             align="right"
@@ -163,84 +169,89 @@ export default function ManualEditor({
             text="Vous décidez : glissez le marqueur B (bâtiment) et D (point de collecte) sur la carte, ou utilisez les champs et flèches. Chaque changement est vérifié par le serveur avec les mêmes règles que l'optimiseur automatique."
           />
         </strong>
-        <button onClick={onExit} className="rounded bg-slate-700 px-2 py-0.5 text-white">
+        <button onClick={onExit} className="btn btn-dark btn-sm">
           Revenir à l&apos;optimum auto
         </button>
       </div>
 
       <div className="grid grid-cols-2 gap-2">
-        <label className="block">
+        <label className="block font-medium text-ink">
           Dimension est-ouest (m)
           <input type="number" min={2} max={200} step={0.5} value={bat.dim_est_ouest_m}
-            onChange={(e) => setDim("dim_est_ouest_m", e.target.value)}
-            className="mt-0.5 w-full rounded border border-gray-300 px-1 py-0.5" />
+            onChange={(e) => setDim("dim_est_ouest_m", e.target.value)} className="field mt-1" />
         </label>
-        <label className="block">
+        <label className="block font-medium text-ink">
           Dimension nord-sud (m)
           <input type="number" min={2} max={200} step={0.5} value={bat.dim_nord_sud_m}
-            onChange={(e) => setDim("dim_nord_sud_m", e.target.value)}
-            className="mt-0.5 w-full rounded border border-gray-300 px-1 py-0.5" />
+            onChange={(e) => setDim("dim_nord_sud_m", e.target.value)} className="field mt-1" />
         </label>
       </div>
 
-      <label className="block">
+      <label className="block font-medium text-ink">
         Rotation : {bat.angle_deg}°
         <HelpTip title="Rotation" text="Fait pivoter le bâtiment autour de son centre. Un bâtiment pivoté dépasse plus facilement les retraits : le serveur le signale." />
         <input type="range" min={-90} max={90} step={5} value={bat.angle_deg}
           onChange={(e) => setBat((b) => ({ ...b, angle_deg: Number(e.target.value) }))}
-          className="w-full" />
+          className="mt-1 w-full accent-brand-600" />
       </label>
 
-      <div className="flex items-center gap-1">
-        <span>Déplacer de 1 m :</span>
-        {([["←", -1, 0], ["↑", 0, 1], ["↓", 0, -1], ["→", 1, 0]] as const).map(([label, dx, dy]) => (
+      <div className="flex items-center gap-1.5">
+        <span className="font-medium text-ink">Déplacer de 1 m :</span>
+        {fleches.map(({ Icone, label, dx, dy }) => (
           <button key={label} onClick={() => nudge(dx, dy)} aria-label={`Déplacer le bâtiment de 1 m (${label})`}
-            className="h-6 w-6 rounded border border-gray-400 bg-white">{label}</button>
+            className="btn btn-ghost h-8 w-8 !p-0">
+            <Icone className="h-4 w-4" aria-hidden="true" />
+          </button>
         ))}
         <HelpTip align="right" title="Déplacement fin" text="Alternative au glisser-déposer, pour ajuster au mètre près (←: ouest, →: est, ↑: nord, ↓: sud)." />
       </div>
 
       <div className="flex items-center gap-2">
         {point ? (
-          <button onClick={() => setPoint(null)} className="rounded border border-gray-400 bg-white px-2 py-0.5">
-            Retirer le point de collecte
-          </button>
+          <button onClick={() => setPoint(null)} className="btn btn-ghost btn-sm">Retirer le point de collecte</button>
         ) : (
-          <button
-            onClick={() => setPoint([bat.centre[0], bat.centre[1] + 12 / M_PER_DEG_LAT])}
-            className="rounded border border-gray-400 bg-white px-2 py-0.5"
-          >
+          <button onClick={() => setPoint([bat.centre[0], bat.centre[1] + 12 / M_PER_DEG_LAT])} className="btn btn-ghost btn-sm">
             Ajouter un point de collecte (D)
           </button>
         )}
         <HelpTip align="right" title="Point de collecte" text="Emplacement où les déchets sont déposés avant ramassage. Il doit être à plus de 3 m du bâtiment, hors bande tampon naturelle, et idéalement à moins de 10 m de la voie." />
       </div>
 
-      {error && <p className="text-red-700">{error}</p>}
+      {error && <p role="alert" className="text-red-700">{error}</p>}
 
       {evaluation && (
-        <div>
-          <div className={`rounded px-2 py-1 font-semibold ${evaluation.valide ? "bg-emerald-200 text-emerald-900" : "bg-red-200 text-red-900"}`}>
-            {evaluation.valide ? "Conforme aux contraintes" : `Non conforme (${erreurs} erreur${erreurs > 1 ? "s" : ""})`}
+        <div className="space-y-2">
+          <div
+            className={`flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold ${
+              evaluation.valide ? "bg-emerald-100 text-emerald-900" : "bg-red-100 text-red-900"
+            }`}
+          >
+            {evaluation.valide ? <CheckCircle2 className="h-4 w-4" aria-hidden="true" /> : <XCircle className="h-4 w-4" aria-hidden="true" />}
+            <span>{evaluation.valide ? "Conforme aux contraintes" : `Non conforme (${erreurs} erreur${erreurs > 1 ? "s" : ""})`}</span>
             <HelpTip align="right" title="Conformité" text="« Conforme » signifie qu'aucune règle impérative n'est violée (limites de parcelle, retraits, tampon naturel, bâti existant, plafond d'emprise). Les avertissements sont des recommandations que vous pouvez choisir de passer outre." />
           </div>
-          <ul className="mt-1 space-y-0.5">
-            {evaluation.violations.map((v) => (
-              <li key={v.code} className={v.severite === "erreur" ? "text-red-700" : "text-amber-700"}>
-                {v.severite === "erreur" ? "✖" : "⚠"} {v.message}
-              </li>
-            ))}
-          </ul>
+          {evaluation.violations.length > 0 && (
+            <ul className="space-y-1">
+              {evaluation.violations.map((v) => (
+                <li key={v.code} className={`flex gap-1.5 ${v.severite === "erreur" ? "text-red-700" : "text-amber-700"}`}>
+                  {v.severite === "erreur"
+                    ? <XCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-label="Erreur" />
+                    : <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-label="Avertissement" />}
+                  <span>{v.message}</span>
+                </li>
+              ))}
+            </ul>
+          )}
           {evaluation.metriques.emprise_m2 !== undefined && (
-            <ul className="mt-1 leading-relaxed">
-              <li>Emprise : {evaluation.metriques.emprise_m2} m² ({evaluation.metriques.ces_pct}% de la parcelle)</li>
-              <li>Distance à la voie : {evaluation.metriques.distance_voie_m} m</li>
-              <li>Fondations : {evaluation.metriques.fondation}</li>
-              <li>Coût estimé : <strong>{fcfa(evaluation.metriques.cout_total_estime_fcfa ?? 0)}</strong></li>
+            <ul className="grid grid-cols-2 gap-2 text-ink">
+              <li className="rounded-xl bg-white px-3 py-2">Emprise <strong className="block text-sm">{evaluation.metriques.emprise_m2} m² ({evaluation.metriques.ces_pct} %)</strong></li>
+              <li className="rounded-xl bg-white px-3 py-2">Distance à la voie <strong className="block text-sm">{evaluation.metriques.distance_voie_m} m</strong></li>
+              <li className="rounded-xl bg-white px-3 py-2">Fondations <strong className="block text-xs">{evaluation.metriques.fondation}</strong></li>
+              <li className="rounded-xl bg-white px-3 py-2">Coût estimé <strong className="block text-sm">{fcfa(evaluation.metriques.cout_total_estime_fcfa ?? 0)}</strong></li>
             </ul>
           )}
           {cmp && (
-            <p className="mt-1 rounded bg-white p-1">
+            <p className="rounded-xl bg-white px-3 py-2 leading-relaxed">
               Par rapport à l&apos;optimum automatique : coût {signed(Math.round(cmp.ecart_cout_fcfa / 1000), " kFCFA")},
               distance à la voie {signed(cmp.ecart_distance_voie_m, " m")}, emprise {evaluation.metriques.emprise_m2} m²
               contre {cmp.emprise_optimale_m2} m².
@@ -251,12 +262,12 @@ export default function ManualEditor({
       )}
 
       <div>
-        <button onClick={demanderAvis} disabled={!evaluation || avisLoading}
-          className="rounded bg-indigo-700 px-2 py-1 text-white disabled:opacity-50">
+        <button onClick={demanderAvis} disabled={!evaluation || avisLoading} className="btn btn-ai btn-sm">
+          <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
           {avisLoading ? "Analyse en cours…" : "Demander l'avis de l'IA"}
         </button>
         <HelpTip align="right" title="Avis de l'IA" text="Un assistant IA relit votre aménagement (contraintes, coûts, comparaison avec l'optimum) et propose des corrections. Il conseille, mais la décision reste la vôtre. Données synthétiques : démonstration uniquement." />
-        {avis && <p className="mt-1 whitespace-pre-wrap rounded bg-white p-2">{avis}</p>}
+        {avis && <p className="mt-2 whitespace-pre-wrap rounded-xl bg-ai-50 px-3 py-2.5 text-ink">{avis}</p>}
       </div>
     </div>
   );

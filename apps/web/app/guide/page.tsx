@@ -1,4 +1,6 @@
 import Link from "next/link";
+import SiteFooter from "../../components/SiteFooter";
+import SiteHeader from "../../components/SiteHeader";
 
 export const metadata = {
   title: "Cadre+ — Mode d'emploi",
@@ -20,15 +22,15 @@ const SECTIONS = [
 
 function Section({ id, title, children }: { id: string; title: string; children: React.ReactNode }) {
   return (
-    <section id={id} className="scroll-mt-6 border-t border-gray-200 pt-6">
-      <h2 className="mb-3 text-xl font-semibold text-slate-900">{title}</h2>
+    <section id={id} className="scroll-mt-6 border-t border-line pt-6">
+      <h2 className="mb-3 text-xl font-semibold text-ink">{title}</h2>
       <div className="space-y-3 leading-relaxed text-slate-700">{children}</div>
     </section>
   );
 }
 
 function H3({ children }: { children: React.ReactNode }) {
-  return <h3 className="pt-2 text-base font-semibold text-slate-900">{children}</h3>;
+  return <h3 className="pt-2 text-base font-semibold text-ink">{children}</h3>;
 }
 
 function Note({ children, tone = "info" }: { children: React.ReactNode; tone?: "info" | "warn" }) {
@@ -43,7 +45,7 @@ function Table({ head, rows }: { head: string[]; rows: string[][] }) {
         <thead>
           <tr>
             {head.map((h) => (
-              <th key={h} className="border border-gray-300 bg-gray-100 px-2 py-1 text-left">{h}</th>
+              <th key={h} className="border border-line bg-brand-50 px-2 py-1 text-left text-ink">{h}</th>
             ))}
           </tr>
         </thead>
@@ -51,7 +53,7 @@ function Table({ head, rows }: { head: string[]; rows: string[][] }) {
           {rows.map((r) => (
             <tr key={r[0]}>
               {r.map((c, i) => (
-                <td key={i} className="border border-gray-300 px-2 py-1 align-top">{c}</td>
+                <td key={i} className="border border-line px-2 py-1 align-top">{c}</td>
               ))}
             </tr>
           ))}
@@ -63,10 +65,12 @@ function Table({ head, rows }: { head: string[]; rows: string[][] }) {
 
 export default function Guide() {
   return (
+    <>
+    <SiteHeader />
     <div className="mx-auto max-w-6xl px-4 py-6 lg:flex lg:gap-10">
       <nav aria-label="Sommaire" className="mb-6 lg:sticky lg:top-6 lg:mb-0 lg:h-fit lg:w-64 lg:shrink-0">
-        <Link href="/" className="mb-4 inline-block rounded bg-slate-800 px-3 py-1.5 text-sm text-white">
-          ← Retour à la carte
+        <Link href="/app" className="btn btn-dark btn-sm mb-4">
+          ← Retour à l'application
         </Link>
         <ul className="space-y-1 text-sm">
           {SECTIONS.map(([id, label]) => (
@@ -79,7 +83,7 @@ export default function Guide() {
 
       <main className="max-w-3xl space-y-8 pb-16">
         <header>
-          <h1 className="text-3xl font-bold text-slate-900">Cadre+ — Mode d&apos;emploi</h1>
+          <h1 className="text-4xl font-extrabold tracking-tight text-ink">Cadre+ — Mode d&apos;emploi</h1>
           <p className="mt-2 text-slate-700">
             Cadre+ est un outil d&apos;aide à la décision pour le cadre de vie : il note les quartiers, propose
             où et comment aménager une parcelle, et répartit un budget entre les quartiers. À chaque étape,
@@ -98,7 +102,7 @@ export default function Guide() {
             Depuis le dossier du projet, la commande <code className="rounded bg-gray-100 px-1">npm run dev</code>{" "}
             lance en une fois l&apos;application web (<code className="rounded bg-gray-100 px-1">http://localhost:3000</code>)
             et le serveur de calcul (<code className="rounded bg-gray-100 px-1">http://localhost:8001</code>). Ouvrez
-            ensuite la première adresse dans votre navigateur.
+            ensuite la première adresse dans votre navigateur : vous arrivez sur la page d&apos;accueil. Le bouton « Ouvrir la démo » mène à l&apos;application (adresse <code className="rounded bg-gray-100 px-1">/app</code>).
           </p>
           <p>
             Pour activer l&apos;assistant IA, copiez <code className="rounded bg-gray-100 px-1">services/api/.env.example</code>{" "}
@@ -116,11 +120,11 @@ export default function Guide() {
           <Table
             head={["Zone", "Contenu"]}
             rows={[
-              ["Bandeau rouge (haut)", "Rappel permanent que les données sont synthétiques + lien vers ce mode d'emploi."],
-              ["Carte (centre)", "Quartiers colorés selon leur ICV, parcelles, aménagements. Molette pour zoomer, glisser pour déplacer. Cliquez sur un élément pour le détail."],
-              ["Cadre en haut à gauche", "Cases pour afficher/masquer les couches, et légende des couleurs."],
+              ["En-tête (haut)", "Navigation (Accueil, Application, Mode d'emploi) et pastille « Données synthétiques » : rappel permanent que les données sont inventées."],
+              ["Carte (centre)", "Zones de quartier colorées selon leur ICV, avec une pastille « nom + note ». Molette pour zoomer, glisser pour déplacer. Cliquez sur un quartier pour ouvrir sa fiche ; les pastilles se masquent quand vous zoomez sur un quartier."],
+              ["Cadre en haut à gauche", "Interrupteurs pour afficher ou masquer les couches, échelle de couleurs et légende. La fiche du quartier choisi s'affiche juste dessous."],
               ["Panneau de droite", "Deux onglets : « Conception assistée » et « Investissements »."],
-              ["Cadre en bas à gauche", "Assistant IA : posez une question en français."],
+              ["Bouton « Assistant IA » (bas à gauche)", "Ouvre la fenêtre de discussion : posez une question en français ou choisissez une suggestion."],
             ]}
           />
         </Section>
@@ -128,7 +132,7 @@ export default function Guide() {
         <Section id="icv" title="3. L'Indice de Cadre de Vie (ICV)">
           <p>
             L&apos;ICV est une note de 0 à 100 attribuée à chaque quartier. Rouge = cadre de vie dégradé, vert = bon.
-            Cliquez sur un quartier pour voir sa note, sa population et la mention « donnée synthétique ».
+            Cliquez sur un quartier (sur sa zone ou sur sa pastille) : une fiche explique sa note critère par critère, du plus faible au plus fort, avec le poids de chaque critère et les points faibles à traiter en priorité.
           </p>
           <H3>Comment la note est calculée</H3>
           <p>
@@ -288,7 +292,7 @@ export default function Guide() {
 
         <Section id="ia" title="7. L'assistant IA">
           <p>
-            Deux usages : <strong>poser une question</strong> (cadre en bas à gauche) et <strong>demander un avis</strong> sur votre
+            Deux usages : <strong>poser une question</strong> (bouton « Assistant IA » en bas à gauche) et <strong>demander un avis</strong> sur votre
             aménagement ou votre plan (boutons violets). L&apos;assistant ne connaît que les données de l&apos;application
             (quartiers, indicateurs, parcelles, plan d&apos;investissement de référence) et rappelle qu&apos;elles sont synthétiques.
           </p>
@@ -304,7 +308,7 @@ export default function Guide() {
         <Section id="donnees" title="8. Données et limites">
           <ul className="list-disc space-y-1 pl-6">
             <li>Données <strong>synthétiques</strong> : 8 quartiers d&apos;Abomey-Calavi et 3 parcelles à Togba, aux valeurs inventées mais réalistes. Elles seront remplacées par les données officielles (cadastre, recensement, réseaux) quand un partenariat sera signé.</li>
-            <li>Les quartiers sont représentés par des <strong>carrés illustratifs</strong> centrés sur la position réelle de chaque arrondissement : ce ne sont pas leurs limites administratives. Le fond de carte est celui d&apos;OpenStreetMap ; les trois parcelles sont fictives et posées autour de Togba.</li>
+            <li>Les quartiers sont représentés par des <strong>zones illustratives en forme de tache</strong>, centrées sur la position réelle de chaque arrondissement (leur taille croît avec la population) : ce ne sont pas leurs limites administratives. Le fond de carte est celui d&apos;OpenStreetMap ; les trois parcelles sont fictives et posées autour de Togba.</li>
             <li>Les parcelles sont des rectangles orientés nord-sud ; l&apos;optimiseur ne gère pas encore les formes quelconques.</li>
             <li>L&apos;outil <strong>aide</strong> à décider ; il ne remplace ni une étude géotechnique, ni un bureau de contrôle, ni l&apos;avis d&apos;un ingénieur responsable.</li>
             <li>Modules prévus mais <strong>pas encore disponibles</strong> dans l&apos;application : prospective démographique 2050, résilience climatique, mobilité multimodale, transition des quartiers précaires, application citoyenne.</li>
@@ -337,6 +341,8 @@ export default function Guide() {
           <p>Zoomez au niveau 15 ou plus, vérifiez que la case « Aménagement optimal » est cochée, ou utilisez le bouton Zoom d&apos;une parcelle.</p>
           <H3>« Avis indisponible » ou « clé manquante ».</H3>
           <p>La clé du fournisseur d&apos;IA n&apos;est pas renseignée dans <code className="rounded bg-gray-100 px-1">services/api/.env</code>, ou le fournisseur est injoignable. Redémarrez après avoir ajouté la clé.</p>
+          <H3>Les pastilles des quartiers ont disparu.</H3>
+          <p>Elles se masquent quand vous zoomez fortement pour ne pas gêner le travail sur une parcelle. Dézoomez pour les retrouver.</p>
           <H3>Mon plan dépasse le budget.</H3>
           <p>Retirez des leviers imposés ou augmentez le budget : l&apos;optimiseur ne complète rien tant que vos choix dépassent l&apos;enveloppe.</p>
           <H3>Puis-je enregistrer mes plans ?</H3>
@@ -344,5 +350,7 @@ export default function Guide() {
         </Section>
       </main>
     </div>
+    <SiteFooter />
+    </>
   );
 }

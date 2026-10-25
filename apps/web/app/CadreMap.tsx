@@ -1,85 +1,99 @@
 "use client";
 
-import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import * as maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import HelpTip from "../components/HelpTip";
+import QuartierCard from "../components/QuartierCard";
+import QuartierMarkers from "../components/QuartierMarkers";
+import { getJson } from "../lib/api";
 import { API_URL } from "../lib/config";
-import { MAP_STYLE } from "../lib/mapStyle";
+import { DEGRADE_ICV_CSS, expressionIcv } from "../lib/couleurs";
+import { MAP_STYLE, STYLE_REPLI } from "../lib/mapStyle";
+import type { Quartier } from "../lib/types";
 import Assistant from "./Assistant";
 import ModulePanel from "./panels/ModulePanel";
 
-const colorScale = (property: string): maplibregl.ExpressionSpecification => [
-  "interpolate",
-  ["linear"],
-  ["get", property],
-  0,
-  "#d73027",
-  50,
-  "#fee08b",
-  100,
-  "#1a9850",
-];
-
-const SYNTHETIC_NOTE = `<em style="color:#777">Donnée synthétique — démonstration</em>`;
+const colorScale = (property: string) => expressionIcv(property) as unknown as maplibregl.ExpressionSpecification;
 
 const GROUPS = {
-  icv: ["icv-fill", "icv-outline"],
+  icv: ["icv-fill", "icv-outline", "icv-selection"],
   parcelles: ["parcelles-fill", "parcelles-outline"],
   amenagement: [
-    "amenagement-constructible",
-    "amenagement-tampon",
-    "amenagement-bassin",
-    "amenagement-existant",
-    "amenagement-batiment",
-    "amenagement-collecte",
+    "amenagement-constructible", "amenagement-tampon", "amenagement-bassin",
+    "amenagement-existant", "amenagement-batiment", "amenagement-collecte",
   ],
 } as const;
 
 type GroupName = keyof typeof GROUPS;
 
+const CALQUES: { id: GroupName; label: string; aide: { titre: string; texte: string } }[] = [
+  {
+    id: "icv", label: "Indice de Cadre de Vie",
+    aide: {
+      titre: "Indice de Cadre de Vie (ICV)",
+      texte: "Note de 0 à 100 par quartier, calculée à partir de 8 critères : accès à l'école, à la santé, à l'eau, électrification, drainage, collecte des déchets, espaces verts, risque d'inondation. Rouge = cadre de vie dégradé, vert = bon. Cliquez sur un quartier pour comprendre sa note.",
+    },
+  },
+  {
+    id: "parcelles", label: "Parcelles",
+    aide: {
+      titre: "Constructibilité des parcelles",
+      texte: "Note de 0 à 100 selon la portance du sol, le risque d'inondation et la pente. Au-dessus de 75 : zone prioritaire ; entre 40 et 75 : constructible sous conditions ; en dessous de 40 : déconseillé. Zoomez (≥ 15) pour voir l'aménagement.",
+    },
+  },
+  {
+    id: "amenagement", label: "Aménagement optimal",
+    aide: {
+      titre: "Aménagement optimal",
+      texte: "Proposition automatique pour chaque parcelle : bâtiment, point de collecte des déchets, zones tampons naturelles, bassin de rétention, bâti existant. Visible à partir du zoom 15.",
+    },
+  },
+];
+
 const EMPTY: GeoJSON.FeatureCollection = { type: "FeatureCollection", features: [] };
 
 function popup(map: maplibregl.Map, lngLat: maplibregl.LngLatLike, html: string) {
-  new maplibregl.Popup().setLngLat(lngLat).setHTML(html).addTo(map);
+  new maplibregl.Popup({ maxWidth: "300px" }).setLngLat(lngLat).setHTML(html).addTo(map);
 }
 
 function addLayers(map: maplibregl.Map) {
-  map.addSource("icv", { type: "geojson", data: `${API_URL}/api/icv` });
+  // Opaque à l'échelle de la commune, estompée en zoomant pour laisser voir le fond (travail sur parcelle)
+  const survol = ["interpolate", ["linear"], ["zoom"],
+    12, ["case", ["boolean", ["feature-state", "hover"], false], 0.98, 0.92],
+    15, ["case", ["boolean", ["feature-state", "hover"], false], 0.28, 0.16]] as unknown as maplibregl.ExpressionSpecification;
+
+  map.addSource("icv", { type: "geojson", data: `${API_URL}/api/icv`, promoteId: "id" });
   map.addLayer({ id: "icv-fill", type: "fill", source: "icv",
-    paint: { "fill-color": colorScale("icv"), "fill-opacity": 0.6 } });
+    paint: { "fill-color": colorScale("icv"), "fill-opacity": survol } });
   map.addLayer({ id: "icv-outline", type: "line", source: "icv",
-    paint: { "line-color": "#333", "line-width": 1 } });
+    paint: { "line-color": "#ffffff", "line-width": 2.5 } });
+  map.addLayer({ id: "icv-selection", type: "line", source: "icv",
+    paint: { "line-color": "#0b2545",
+             "line-width": ["case", ["boolean", ["feature-state", "selected"], false], 4, 0] } });
 
   map.addSource("parcelles", { type: "geojson", data: `${API_URL}/api/conception-assistee` });
   map.addLayer({ id: "parcelles-fill", type: "fill", source: "parcelles",
-    paint: { "fill-color": colorScale("indice_constructibilite_0_100"), "fill-opacity": 0.55 } });
+    paint: { "fill-color": colorScale("indice_constructibilite_0_100"), "fill-opacity": 0.6 } });
   map.addLayer({ id: "parcelles-outline", type: "line", source: "parcelles",
-    paint: { "line-color": "#111", "line-width": 2 } });
+    paint: { "line-color": "#0b2545", "line-width": 2 } });
 
   map.addSource("amenagement", { type: "geojson", data: `${API_URL}/api/conception-assistee/amenagement` });
   const type = (t: string): maplibregl.ExpressionSpecification => ["==", ["get", "type"], t];
   const zoomMin = 15;
   map.addLayer({ id: "amenagement-constructible", type: "fill", source: "amenagement",
-    filter: type("zone_constructible"), minzoom: zoomMin,
-    paint: { "fill-color": "#22c55e", "fill-opacity": 0.12 } });
+    filter: type("zone_constructible"), minzoom: zoomMin, paint: { "fill-color": "#22c55e", "fill-opacity": 0.14 } });
   map.addLayer({ id: "amenagement-tampon", type: "fill", source: "amenagement",
-    filter: type("zone_tampon"), minzoom: zoomMin,
-    paint: { "fill-color": "#15803d", "fill-opacity": 0.35 } });
+    filter: type("zone_tampon"), minzoom: zoomMin, paint: { "fill-color": "#15803d", "fill-opacity": 0.32 } });
   map.addLayer({ id: "amenagement-bassin", type: "fill", source: "amenagement",
-    filter: type("bassin_retention"), minzoom: zoomMin,
-    paint: { "fill-color": "#0ea5e9", "fill-opacity": 0.55 } });
+    filter: type("bassin_retention"), minzoom: zoomMin, paint: { "fill-color": "#38bdf8", "fill-opacity": 0.6 } });
   map.addLayer({ id: "amenagement-existant", type: "fill", source: "amenagement",
-    filter: type("emprise_existante"), minzoom: zoomMin,
-    paint: { "fill-color": "#6b7280", "fill-opacity": 0.85 } });
+    filter: type("emprise_existante"), minzoom: zoomMin, paint: { "fill-color": "#94a3b8", "fill-opacity": 0.9 } });
   map.addLayer({ id: "amenagement-batiment", type: "fill", source: "amenagement",
-    filter: type("batiment"), minzoom: zoomMin,
-    paint: { "fill-color": "#1d4ed8", "fill-opacity": 0.85 } });
+    filter: type("batiment"), minzoom: zoomMin, paint: { "fill-color": "#2563eb", "fill-opacity": 0.88 } });
   map.addLayer({ id: "amenagement-collecte", type: "circle", source: "amenagement",
     filter: type("point_collecte"), minzoom: zoomMin,
-    paint: { "circle-radius": 7, "circle-color": "#f59e0b",
-             "circle-stroke-color": "#fff", "circle-stroke-width": 2 } });
+    paint: { "circle-radius": 8, "circle-color": "#f59e0b", "circle-stroke-color": "#ffffff", "circle-stroke-width": 2.5 } });
 
   // Aménagement dessiné à la main (alimenté par l'éditeur manuel) : vert = conforme, rouge = non conforme
   map.addSource("manuel", { type: "geojson", data: EMPTY });
@@ -90,73 +104,104 @@ function addLayers(map: maplibregl.Map) {
     filter: type("batiment_manuel"), paint: { "line-color": couleur, "line-width": 3 } });
 }
 
-function addInteractions(map: maplibregl.Map) {
-  map.on("click", "icv-fill", (e) => {
-    const p = e.features?.[0]?.properties;
-    if (p) popup(map, e.lngLat, `<strong>${p.nom_quartier}</strong><br/>ICV : ${p.icv} / 100<br/>${p.population.toLocaleString("fr-FR")} habitants<br/>${SYNTHETIC_NOTE}`);
-  });
-  map.on("click", "parcelles-fill", (e) => {
-    const p = e.features?.[0]?.properties;
-    if (p) popup(map, e.lngLat,
-      `<strong>${p.nom}</strong><br/>Indice de constructibilité : ${p.indice_constructibilite_0_100} / 100<br/>` +
-      `<p style="max-width:260px">${p.recommandation}</p>${SYNTHETIC_NOTE}`);
-  });
-  map.on("click", "amenagement-batiment", (e) => {
-    const p = e.features?.[0]?.properties;
-    if (p) popup(map, e.lngLat,
-      `<strong>Bâtiment proposé (auto)</strong><br/>${p.longueur_m} × ${p.largeur_m} m (${p.emprise_m2} m²)<br/>Orientation ${p.orientation}`);
-  });
-  map.on("click", "amenagement-collecte", (e) => {
-    const p = e.features?.[0]?.properties;
-    if (p) popup(map, e.lngLat,
-      `<strong>Point de collecte des déchets</strong><br/>À ${p.distance_batiment_m} m du bâtiment, côté voie d'accès`);
-  });
-  map.on("click", "amenagement-bassin", (e) => {
-    const p = e.features?.[0]?.properties;
-    if (p) popup(map, e.lngLat, `<strong>Bassin de rétention</strong><br/>Volume ≈ ${p.volume_m3} m³`);
-  });
-
-  for (const layer of ["icv-fill", "parcelles-fill", "amenagement-batiment", "amenagement-collecte", "amenagement-bassin"]) {
-    map.on("mouseenter", layer, () => (map.getCanvas().style.cursor = "pointer"));
-    map.on("mouseleave", layer, () => (map.getCanvas().style.cursor = ""));
-  }
-}
-
 export default function CadreMap() {
-  const mapContainer = useRef<HTMLDivElement>(null);
+  const conteneur = useRef<HTMLDivElement>(null);
   const [map, setMap] = useState<maplibregl.Map | null>(null);
-  const [visible, setVisible] = useState<Record<GroupName, boolean>>({
-    icv: true,
-    parcelles: true,
-    amenagement: true,
-  });
+  const [visible, setVisible] = useState<Record<GroupName, boolean>>({ icv: true, parcelles: true, amenagement: true });
+  const [quartiers, setQuartiers] = useState<Quartier[]>([]);
+  const [selection, setSelection] = useState<string | null>(null);
+  const survolRef = useRef<string | null>(null);
+  const quartiersRef = useRef<Quartier[]>([]);
+  quartiersRef.current = quartiers;
 
   useEffect(() => {
-    if (!mapContainer.current) return;
+    getJson<{ features: { properties: Quartier }[] }>("/api/icv")
+      .then((d) => setQuartiers(d.features.map((f) => f.properties)))
+      .catch(() => setQuartiers([]));
+  }, []);
+
+  const choisir = useCallback((id: string | null, carte: maplibregl.Map | null) => {
+    setSelection(id);
+    if (!id || !carte) return;
+    const q = quartiersRef.current.find((x) => x.id === id);
+    if (q) carte.flyTo({ center: q.centre, zoom: Math.max(carte.getZoom(), 11.6), duration: 900 });
+  }, []);
+
+  useEffect(() => {
+    if (!conteneur.current) return;
     // Le worker de MapLibre est hébergé dans public/maplibre/ (voir scripts/copy-maplibre-assets.mjs)
     maplibregl.setWorkerUrl(`${window.location.origin}/maplibre/maplibre-gl-worker.mjs`);
     const instance = new maplibregl.Map({
-      container: mapContainer.current,
+      container: conteneur.current,
       style: MAP_STYLE,
       // cadrage sur l'ensemble des quartiers, en laissant la place aux panneaux latéraux
-      bounds: [[2.22, 6.36], [2.40, 6.70]],
-      fitBoundsOptions: { padding: { top: 60, bottom: 60, left: 320, right: 440 } },
+      bounds: [[2.2, 6.34], [2.42, 6.72]],
+      fitBoundsOptions: { padding: { top: 40, bottom: 40, left: 330, right: 460 } },
+      attributionControl: { compact: true },
     });
-    instance.addControl(new maplibregl.NavigationControl(), "top-right");
+    instance.addControl(new maplibregl.NavigationControl({ visualizePitch: false }), "bottom-right");
+
+    // Si le fond principal ne répond pas, on bascule sur le fond de repli intégré.
+    const minuterie = setTimeout(() => {
+      if (!instance.isStyleLoaded()) instance.setStyle(STYLE_REPLI);
+    }, 8000);
+
     // « style.load » plutôt que « load » : les données s'affichent sans attendre les tuiles du fond de carte (connexion lente)
     instance.once("style.load", () => {
+      clearTimeout(minuterie);
       addLayers(instance);
-      addInteractions(instance);
+
+      instance.on("click", "icv-fill", (e) => {
+        const id = e.features?.[0]?.properties?.id as string | undefined;
+        if (id) choisir(id, instance);
+      });
+      instance.on("mousemove", "icv-fill", (e) => {
+        const id = e.features?.[0]?.properties?.id as string | undefined;
+        if (!id || id === survolRef.current) return;
+        if (survolRef.current) instance.setFeatureState({ source: "icv", id: survolRef.current }, { hover: false });
+        survolRef.current = id;
+        instance.setFeatureState({ source: "icv", id }, { hover: true });
+      });
+      instance.on("mouseleave", "icv-fill", () => {
+        if (survolRef.current) instance.setFeatureState({ source: "icv", id: survolRef.current }, { hover: false });
+        survolRef.current = null;
+      });
+      instance.on("click", "parcelles-fill", (e) => {
+        const p = e.features?.[0]?.properties;
+        if (p) popup(instance, e.lngLat,
+          `<strong>${p.nom}</strong><br/>Indice de constructibilité : <strong>${p.indice_constructibilite_0_100}</strong> / 100<br/>` +
+          `<span style="display:block;margin-top:6px">${p.recommandation}</span>`);
+      });
+      instance.on("click", "amenagement-batiment", (e) => {
+        const p = e.features?.[0]?.properties;
+        if (p) popup(instance, e.lngLat,
+          `<strong>Bâtiment proposé (auto)</strong><br/>${p.longueur_m} × ${p.largeur_m} m (${p.emprise_m2} m²)<br/>Orientation ${p.orientation}`);
+      });
+      instance.on("click", "amenagement-collecte", (e) => {
+        const p = e.features?.[0]?.properties;
+        if (p) popup(instance, e.lngLat,
+          `<strong>Point de collecte des déchets</strong><br/>À ${p.distance_batiment_m} m du bâtiment, côté voie d'accès`);
+      });
+      instance.on("click", "amenagement-bassin", (e) => {
+        const p = e.features?.[0]?.properties;
+        if (p) popup(instance, e.lngLat, `<strong>Bassin de rétention</strong><br/>Volume ≈ ${p.volume_m3} m³`);
+      });
+      for (const layer of ["icv-fill", "parcelles-fill", "amenagement-batiment", "amenagement-collecte", "amenagement-bassin"]) {
+        instance.on("mouseenter", layer, () => (instance.getCanvas().style.cursor = "pointer"));
+        instance.on("mouseleave", layer, () => (instance.getCanvas().style.cursor = ""));
+      }
+
       if (process.env.NODE_ENV !== "production" || process.env.NEXT_PUBLIC_E2E === "1") {
         (window as unknown as { __cadreMap?: maplibregl.Map }).__cadreMap = instance; // prise pour les tests e2e
       }
       setMap(instance);
     });
     return () => {
+      clearTimeout(minuterie);
       instance.remove();
       setMap(null);
     };
-  }, []);
+  }, [choisir]);
 
   useEffect(() => {
     if (!map) return;
@@ -167,60 +212,83 @@ export default function CadreMap() {
     }
   }, [map, visible]);
 
-  const toggle = (group: GroupName) => (e: React.ChangeEvent<HTMLInputElement>) =>
-    setVisible((v) => ({ ...v, [group]: e.target.checked }));
+  const selectionPrecedente = useRef<string | null>(null);
+  useEffect(() => {
+    if (!map) return;
+    if (selectionPrecedente.current) map.setFeatureState({ source: "icv", id: selectionPrecedente.current }, { selected: false });
+    if (selection) map.setFeatureState({ source: "icv", id: selection }, { selected: true });
+    selectionPrecedente.current = selection;
+  }, [map, selection]);
+
+  const quartierChoisi = quartiers.find((q) => q.id === selection) ?? null;
 
   return (
-    <div className="relative h-screen w-full">
-      <div className="absolute inset-x-0 top-0 z-10 flex items-center justify-center gap-4 bg-red-700 py-1.5 text-center text-sm text-white">
-        <span>Données synthétiques à des fins de démonstration — ne pas présenter comme données officielles</span>
-        <Link href="/guide" className="rounded bg-white px-2 py-0.5 font-medium text-red-800 hover:bg-red-50">
-          Mode d&apos;emploi
-        </Link>
+    <div className="relative h-full w-full overflow-hidden">
+      <div className="absolute inset-0">
+        <div ref={conteneur} className="h-full w-full" />
       </div>
 
-      <div className="absolute left-2.5 top-11 z-10 rounded-lg bg-white px-3.5 py-2.5 text-sm leading-relaxed shadow-lg">
-        <div className="mb-1.5 font-semibold">Cadre+ — démo Abomey-Calavi</div>
-        <label className="block">
-          <input type="checkbox" checked={visible.icv} onChange={toggle("icv")} /> Indice de Cadre de Vie (quartiers)
-          <HelpTip
-            title="Indice de Cadre de Vie (ICV)"
-            text="Note de 0 à 100 par quartier, calculée à partir de 8 critères : accès à l'école, à la santé, à l'eau, électrification, drainage, collecte des déchets, espaces verts, risque d'inondation. Rouge = cadre de vie dégradé, vert = bon. Cliquez sur un quartier pour le détail."
-          />
-        </label>
-        <label className="block">
-          <input type="checkbox" checked={visible.parcelles} onChange={toggle("parcelles")} /> Parcelles (constructibilité)
-          <HelpTip
-            title="Constructibilité des parcelles"
-            text="Note de 0 à 100 selon la portance du sol, le risque d'inondation et la pente. Au-dessus de 75 : zone prioritaire ; entre 40 et 75 : constructible sous conditions ; en dessous de 40 : déconseillé. Zoomez (≥ 15) pour voir l'aménagement."
-          />
-        </label>
-        <label className="block">
-          <input type="checkbox" checked={visible.amenagement} onChange={toggle("amenagement")} /> Aménagement optimal (zoom ≥ 15)
-          <HelpTip
-            title="Aménagement optimal"
-            text="Proposition automatique pour chaque parcelle : bâtiment (bleu), point de collecte des déchets (orange), zones tampons naturelles (vert foncé), bassin de rétention (bleu clair), bâti existant (gris). Visible à partir du zoom 15."
-          />
-        </label>
-        <div className="mt-2 flex items-center gap-1">
-          <span>0</span>
-          <div className="h-2.5 w-20 bg-gradient-to-r from-[#d73027] via-[#fee08b] to-[#1a9850]" />
-          <span>100</span>
-        </div>
-        <div className="mt-2 grid grid-cols-2 gap-x-3 text-xs">
-          <span><i className="inline-block h-2.5 w-2.5 bg-[#1d4ed8]" /> Bâtiment</span>
-          <span><i className="inline-block h-2.5 w-2.5 rounded-full bg-[#f59e0b]" /> Collecte déchets</span>
-          <span><i className="inline-block h-2.5 w-2.5 bg-[#15803d]" /> Zone tampon</span>
-          <span><i className="inline-block h-2.5 w-2.5 bg-[#0ea5e9]" /> Bassin rétention</span>
-          <span><i className="inline-block h-2.5 w-2.5 bg-[#6b7280]" /> Bâti existant</span>
-          <span><i className="inline-block h-2.5 w-2.5 border-2 border-[#16a34a]" /> Votre tracé</span>
-        </div>
+      <div className="pointer-events-none absolute left-3 top-3 z-10 flex max-h-[calc(100%-5.5rem)] w-72 flex-col gap-3 overflow-y-auto pb-1">
+        <section className="glass pointer-events-auto p-4" aria-label="Couches de la carte">
+          <p className="label-caps">Couches</p>
+          <ul className="mt-2 space-y-0.5">
+            {CALQUES.map((c) => (
+              <li key={c.id}>
+                <label className="flex cursor-pointer items-center justify-between gap-3 py-1.5">
+                  <span className="text-sm font-medium text-ink">
+                    {c.label}
+                    <HelpTip title={c.aide.titre} text={c.aide.texte} />
+                  </span>
+                  <span className="relative inline-flex shrink-0 items-center">
+                    <input
+                      type="checkbox"
+                      role="switch"
+                      checked={visible[c.id]}
+                      onChange={(e) => setVisible((v) => ({ ...v, [c.id]: e.target.checked }))}
+                      aria-label={`Afficher : ${c.label}`}
+                      className="peer sr-only"
+                    />
+                    <span className="h-5 w-9 rounded-full bg-slate-300 transition peer-checked:bg-brand-600 peer-focus-visible:ring-2 peer-focus-visible:ring-brand-600 peer-focus-visible:ring-offset-2" />
+                    <span className="absolute left-0.5 h-4 w-4 rounded-full bg-white shadow transition peer-checked:translate-x-4" />
+                  </span>
+                </label>
+              </li>
+            ))}
+          </ul>
+
+          <div className="mt-3">
+            <div className="h-2 rounded-full" style={{ background: DEGRADE_ICV_CSS }} />
+            <div className="mt-1 flex justify-between text-[11px] font-medium text-muted">
+              <span>Dégradé (0)</span>
+              <span>Bon (100)</span>
+            </div>
+          </div>
+
+          <details className="mt-3 text-xs text-body">
+            <summary className="cursor-pointer font-medium text-muted hover:text-ink">Légende de l&apos;aménagement</summary>
+            <ul className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1.5">
+              <li className="flex items-center gap-1.5"><i className="h-2.5 w-2.5 rounded-sm bg-[#2563eb]" /> Bâtiment</li>
+              <li className="flex items-center gap-1.5"><i className="h-2.5 w-2.5 rounded-full bg-[#f59e0b]" /> Collecte déchets</li>
+              <li className="flex items-center gap-1.5"><i className="h-2.5 w-2.5 rounded-sm bg-[#15803d]" /> Zone tampon</li>
+              <li className="flex items-center gap-1.5"><i className="h-2.5 w-2.5 rounded-sm bg-[#38bdf8]" /> Bassin rétention</li>
+              <li className="flex items-center gap-1.5"><i className="h-2.5 w-2.5 rounded-sm bg-[#94a3b8]" /> Bâti existant</li>
+              <li className="flex items-center gap-1.5"><i className="h-2.5 w-2.5 rounded-sm border-2 border-[#16a34a]" /> Votre tracé</li>
+            </ul>
+          </details>
+        </section>
+
+        {quartierChoisi && <QuartierCard quartier={quartierChoisi} onClose={() => setSelection(null)} />}
       </div>
 
+      <QuartierMarkers
+        map={map}
+        quartiers={quartiers}
+        visible={visible.icv}
+        selection={selection}
+        onSelect={(id) => choisir(id, map)}
+      />
       <ModulePanel map={map} />
       <Assistant />
-
-      <div ref={mapContainer} className="h-full w-full" />
     </div>
   );
 }

@@ -529,8 +529,8 @@ export const blocs = [
   },
 
   { t: "h2", text: "Annexe C — État d'avancement de la démonstration" },
-  { t: "p", text: "Au jour de la rédaction, la démonstration comprend la carte de l'ICV, la Conception assistée (automatique et manuelle), l'Arbitrage des investissements (automatique, mixte, manuel), l'Assistant IA, l'aide intégrée et le mode d'emploi, sur données synthétiques. Les autres modules et l'application citoyenne ne sont pas commencés. Les captures ci-dessous montrent l'application réelle." },
-  { t: "fig", file: "capture-carte-icv.png", caption: "Figure 3 — Carte de l'ICV des huit quartiers d'Abomey-Calavi (données synthétiques ; les carrés sont illustratifs).", widthPx: 600 },
+  { t: "p", text: "Au jour de la rédaction, la démonstration comprend une page d'accueil de présentation, la carte de l'ICV avec fiche explicative par quartier, la Conception assistée (automatique et manuelle), l'Arbitrage des investissements (automatique, mixte, manuel), l'Assistant IA, l'aide intégrée et le mode d'emploi, sur données synthétiques. Les autres modules et l'application citoyenne ne sont pas commencés. Les captures ci-dessous montrent l'application réelle." },
+  { t: "fig", file: "capture-carte-icv.png", caption: "Figure 3 — Carte de l'ICV des huit quartiers d'Abomey-Calavi (données synthétiques ; les zones en forme de tache sont illustratives).", widthPx: 600 },
   { t: "fig", file: "capture-mode-manuel.png", caption: "Figure 4 — Conception assistée en mode manuel : le bâtiment déplacé trop près de la voie est signalé non conforme.", widthPx: 600 },
   { t: "fig", file: "capture-investissements.png", caption: "Figure 5 — Arbitrage des investissements en mode mixte : un quartier décidé à la main, les autres complétés par l'optimiseur.", widthPx: 600 },
 

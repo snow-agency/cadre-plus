@@ -12,6 +12,8 @@ geopandas/shapely installés.
 """
 import csv
 import json
+import math
+import random
 
 # Poids de l'Indice de Cadre de Vie (ICV). Somme = 1.0. À ajuster et
 # justifier au fur et à mesure des retours terrain — ne jamais les présenter
@@ -56,7 +58,6 @@ QUARTIERS = [
      "drainage_0_10": 2, "dechets_pct": 15, "espaces_verts_pct": 22, "inondation_0_10": 5},
 ]
 
-DEMI_COTE_DEG = 0.010  # ~1,1 km de demi-côté : carré illustratif, pas une limite administrative
 
 # Population illustrative par quartier (inventée), utilisée par les modules
 # Arbitrage des investissements et Prospective 2050.
@@ -95,14 +96,25 @@ def calculer_icv(q: dict) -> dict:
     return sous_scores, round(icv, 1)
 
 
-def carre(lon: float, lat: float, demi_cote: float = DEMI_COTE_DEG) -> list:
-    return [[
-        [lon - demi_cote, lat - demi_cote],
-        [lon + demi_cote, lat - demi_cote],
-        [lon + demi_cote, lat + demi_cote],
-        [lon - demi_cote, lat + demi_cote],
-        [lon - demi_cote, lat - demi_cote],
-    ]]
+def zone_organique(lon: float, lat: float, population: int, graine: str, points: int = 56) -> list:
+    """Contour illustratif en forme de tache, centré sur l'arrondissement.
+
+    La taille croît avec la racine de la population ; la forme est une déformation
+    reproductible (graine = identifiant) d'un cercle. Ce n'est PAS une limite administrative.
+    """
+    alea = random.Random(graine)
+    rayon_km = 0.9 + 1.1 * math.sqrt(population / 120_000)
+    harmoniques = [(2, 0.17), (3, 0.11), (5, 0.06)]
+    phases = [(k, a, alea.uniform(0, 2 * math.pi)) for k, a in harmoniques]
+    km_par_deg_lat = 110.574
+    km_par_deg_lon = 111.32 * math.cos(math.radians(lat))
+    anneau = []
+    for i in range(points):
+        t = 2 * math.pi * i / points
+        r = rayon_km * (1 + sum(a * math.cos(k * t + ph) for k, a, ph in phases))
+        anneau.append([round(lon + r * math.cos(t) / km_par_deg_lon, 6), round(lat + r * math.sin(t) / km_par_deg_lat, 6)])
+    anneau.append(anneau[0])
+    return [anneau]
 
 
 def construire_geojson() -> dict:
@@ -116,6 +128,7 @@ def construire_geojson() -> dict:
                 "nom_quartier": q["nom"],
                 "icv": icv,
                 "population": POPULATION[q["id"]],
+                "centre": [q["lon"], q["lat"]],
                 "indicateurs_bruts": {
                     "temps_acces_ecole_min": q["ecole_min"],
                     "temps_acces_sante_min": q["sante_min"],
@@ -128,7 +141,7 @@ def construire_geojson() -> dict:
                 },
                 "sous_scores_normalises_0_100": {k: round(v, 1) for k, v in sous_scores.items()},
             },
-            "geometry": {"type": "Polygon", "coordinates": carre(q["lon"], q["lat"])},
+            "geometry": {"type": "Polygon", "coordinates": zone_organique(q["lon"], q["lat"], POPULATION[q["id"]], q["id"])},
         })
     return {
         "type": "FeatureCollection",
